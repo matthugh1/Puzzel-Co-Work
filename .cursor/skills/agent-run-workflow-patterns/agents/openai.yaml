@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Run Workflow Patterns"
+  short_description: "Build agent runs, batches, and workflows safely."
+  default_prompt: "Add agent run or workflow features with audit logging and policy safety."

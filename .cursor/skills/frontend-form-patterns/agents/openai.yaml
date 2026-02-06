@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Form Patterns"
+  short_description: "Build forms with validation, loading, and CSRF."
+  default_prompt: "Create a form component following design system and API patterns."

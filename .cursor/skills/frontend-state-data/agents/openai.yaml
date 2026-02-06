@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend State & Data"
+  short_description: "Fetch and mutate data with App Router patterns."
+  default_prompt: "Implement data fetching and mutation with optimistic UI."

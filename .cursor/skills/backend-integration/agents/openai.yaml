@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Integration"
+  short_description: "Add or update backend integrations securely."
+  default_prompt: "Add a backend integration following Skills Library patterns."

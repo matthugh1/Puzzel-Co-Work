@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Validation Errors"
+  short_description: "Standardize Zod validation and error handling."
+  default_prompt: "Implement request validation and safe error responses."

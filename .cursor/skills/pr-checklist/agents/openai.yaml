@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR Checklist"
+  short_description: "Run a pre-PR quality and security checklist."
+  default_prompt: "Provide a PR readiness checklist and verification commands."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Accessibility"
+  short_description: "Ensure accessible UI with keyboard and aria."
+  default_prompt: "Audit a UI for accessibility and fix issues."

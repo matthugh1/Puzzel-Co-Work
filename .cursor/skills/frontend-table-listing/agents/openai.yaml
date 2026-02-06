@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Table Listing"
+  short_description: "Build list/table views with pagination and states."
+  default_prompt: "Create a list view with loading, empty, and error states."

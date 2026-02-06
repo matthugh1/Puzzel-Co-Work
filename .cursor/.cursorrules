@@ -1,0 +1,138 @@
+# Puzzel Co-Work - Cursor Rules
+
+## Project Overview
+Puzzel Co-Work is a collaborative workspace platform built with Next.js, TypeScript, and PostgreSQL. It provides a foundation for team collaboration and workspace management.
+
+## Tech Stack
+- **Framework**: Next.js 16 with App Router
+- **Language**: TypeScript (strict mode)
+- **Database**: PostgreSQL via Prisma 5
+- **Auth**: JWT via jose library (swappable for Azure AD later)
+- **Styling**: TailwindCSS with Puzzel Design System
+
+## Project Structure
+```
+src/
+├── app/
+│   ├── api/           # API routes (Next.js App Router)
+│   └── (pages)/       # UI pages
+├── lib/
+│   ├── auth/          # Auth provider abstraction
+│   ├── db.ts          # Prisma client singleton
+│   └── permissions.ts # RBAC middleware
+├── components/        # React components
+└── types/             # TypeScript types
+prisma/
+├── schema.prisma      # Database schema
+└── seed.ts            # Seed script
+```
+
+## RBAC Model
+Roles: viewer, admin
+Permissions: users:read, users:admin, audit:read
+
+## API Route Patterns
+Always use this pattern for protected routes:
+```typescript
+import { checkAuthWithPermission, PERMISSIONS } from '@/lib/permissions';
+
+export async function GET(request: Request) {
+  const authResult = await checkAuthWithPermission(request, PERMISSIONS.USERS_READ);
+  if (!authResult.authorized) return authResult.response;
+  const { user } = authResult;
+  // ... rest of handler
+}
+```
+
+## API Route Order (Required)
+All state-changing API routes must follow this exact order:
+
+CSRF -> Auth -> Organization -> Rate Limit -> Validate -> Logic -> Audit -> Response
+
+For tenant-scoped routes, organization context extraction and membership validation is REQUIRED after authentication.
+
+## Database Schema Conventions
+- Use Prisma with PostgreSQL
+- Tables use snake_case via @@map()
+- Models use PascalCase
+- Fields: id (cuid), createdAt, updatedAt
+
+## Code Style
+- Use TypeScript strict mode
+- Prefer async/await over .then()
+- Use NextResponse.json() for API responses
+- Handle errors with try/catch and return proper status codes
+- Use @/ path aliases for imports
+
+## UI Design Rules (Puzzel Nordic Design)
+Key rules:
+- ✅ White backgrounds only (var(--color-background))
+- ✅ Dark text (var(--color-text))
+- ✅ Purple accents (var(--color-primary): #8b5cf6)
+- ✅ Height-constrained pages (max-height: 100vh)
+- ❌ NO dark backgrounds
+- ❌ NO glass morphism
+- ❌ NO cyan/teal colors
+- Use CSS variables from globals.css, not hardcoded values
+- Use `.page-container`, `.page-header`, `.page-content` layout
+
+## Security Standards
+- Validate all input with Zod (`@/lib/validation`).
+- Use `validateCSRFToken` for POST/PUT/PATCH/DELETE.
+- Apply rate limiting (`@/lib/rate-limit`).
+- Use generic error messages only, no sensitive details.
+- Never log or return secrets, tokens, or passwords.
+- Use audit logging for create/update/delete/approve actions.
+
+## Multi-Tenancy Requirements (Non-Negotiable)
+
+- All tenant-scoped models MUST include `organizationId String` field
+- All database queries MUST filter by `organizationId` (via Prisma middleware or explicit filters)
+- All API routes MUST extract organization context from JWT token
+- All API routes MUST validate user membership in organization
+- Organization context is stored in JWT token (session-based)
+- Use `requireOrganization(request)` from `@/lib/organization` to get organization context
+- Never query tenant-scoped data without organization filter
+- Audit logs MUST include `organizationId` for tenant-scoped actions
+
+## Skills Usage
+- Skills live in `.cursor/skills` and also in Codex UI at `~/.codex/skills`.
+- If a request matches a skill description, use it.
+- Prefer existing skills over creating new ones.
+
+### Key Skills (Quick Links)
+- API routes: `.cursor/skills/api-route-development/SKILL.md`
+- Database schema: `.cursor/skills/database-schema-development/SKILL.md`
+- Migrations/seed: `.cursor/skills/db-migration-and-seed-update/SKILL.md`
+- RBAC/permissions: `.cursor/skills/permission-and-rbac-extension/SKILL.md`
+- Security checklist: `.cursor/skills/security-and-governance-checker/SKILL.md`
+- UI pages: `.cursor/skills/ui-page-builder/SKILL.md`
+- UI components: `.cursor/skills/ui-component-development/SKILL.md`
+- Frontend forms: `.cursor/skills/frontend-form-patterns/SKILL.md`
+- Frontend lists: `.cursor/skills/frontend-table-listing/SKILL.md`
+- Frontend auth: `.cursor/skills/frontend-auth-flows/SKILL.md`
+- Frontend data: `.cursor/skills/frontend-state-data/SKILL.md`
+- Frontend a11y: `.cursor/skills/frontend-accessibility/SKILL.md`
+
+## Port Configuration
+- **Application Port**: 3002 (fixed)
+- **PostgreSQL Port**: 5434 (to avoid conflict with other apps)
+
+## Testing
+- Test API routes with curl or Postman
+- Default admin: admin@puzzel.com (set via ADMIN_PASSWORD env var)
+- Run `pnpm db:seed` to reset test data
+
+## Git Commits
+Use conventional commits:
+- feat: new feature
+- fix: bug fix
+- refactor: code refactoring
+- docs: documentation
+- chore: maintenance
+
+## Default Expectations
+- Use `@/` path aliases, no relative imports.
+- Use async/await, not `.then()` chains.
+- Wrap API handlers in try/catch and return `NextResponse.json()`.
+- Use audit logging for sensitive actions.

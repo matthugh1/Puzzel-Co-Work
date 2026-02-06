@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prompt Router"
+  short_description: "Route tasks to the best skill and generate handoff prompts."
+  default_prompt: "Analyze the task and generate a role-based handoff prompt."

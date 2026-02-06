@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Auth Flows"
+  short_description: "Implement login/logout/session UX safely."
+  default_prompt: "Build login and session flows using existing auth endpoints."
