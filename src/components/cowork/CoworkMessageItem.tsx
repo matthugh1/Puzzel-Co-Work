@@ -31,6 +31,39 @@ function sortContentBlocks(blocks: MessageContent[]): MessageContent[] {
   return [...blocks].sort((a, b) => order(a) - order(b));
 }
 
+/** True if any block before idx is a sub_agent_status with all agents completed. */
+function hasCompletedSubAgentsBefore(contents: MessageContent[], idx: number): boolean {
+  return contents.slice(0, idx).some((b) => {
+    if (b.type !== "sub_agent_status") return false;
+    const agents = b.agents as Array<{ status: string }>;
+    return agents.length > 0 && agents.every((a) => a.status === "completed");
+  });
+}
+
+function SubAgentSeparatorBanner() {
+  return (
+    <div
+      className="cowork-subagent-separator"
+      style={{
+        marginTop: 12,
+        marginBottom: 12,
+        padding: "12px 16px",
+        fontSize: "0.8125rem",
+        background: "var(--color-surface-secondary)",
+        borderLeft: "3px solid var(--color-primary)",
+        borderRadius: "0 var(--radius-md) var(--radius-md) 0",
+        color: "var(--color-text-secondary)",
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+      }}
+    >
+      <IconCheckCircle size={16} style={{ color: "var(--color-success)", flexShrink: 0 }} />
+      <span>All tasks completed. Final response below:</span>
+    </div>
+  );
+}
+
 export function CoworkMessageItem({ message }: CoworkMessageItemProps) {
   const isUser = message.role === "user";
   const rawContents: MessageContent[] = Array.isArray(message.content)
@@ -49,7 +82,12 @@ export function CoworkMessageItem({ message }: CoworkMessageItemProps) {
         </div>
         <div className="cowork-message__content">
           {contents.map((block, idx) => (
-            <ContentBlock key={idx} block={block} sessionId={message.sessionId} />
+            <span key={idx} style={{ display: "block" }}>
+              {block.type === "text" && hasCompletedSubAgentsBefore(contents, idx) && (
+                <SubAgentSeparatorBanner />
+              )}
+              <ContentBlock block={block} sessionId={message.sessionId} />
+            </span>
           ))}
         </div>
       </div>
