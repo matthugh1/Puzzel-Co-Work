@@ -20,11 +20,23 @@ interface CoworkMessageItemProps {
   message: CoworkMessage;
 }
 
+/** Order for display: sub-agents first, then tool activity, then text (final response). */
+function sortContentBlocks(blocks: MessageContent[]): MessageContent[] {
+  const order = (b: MessageContent) => {
+    if (b.type === "sub_agent_status") return 0;
+    if (b.type === "tool_use" || b.type === "tool_result") return 1;
+    if (b.type === "text") return 2;
+    return 3;
+  };
+  return [...blocks].sort((a, b) => order(a) - order(b));
+}
+
 export function CoworkMessageItem({ message }: CoworkMessageItemProps) {
   const isUser = message.role === "user";
-  const contents: MessageContent[] = Array.isArray(message.content)
+  const rawContents: MessageContent[] = Array.isArray(message.content)
     ? message.content
     : [{ type: "text", text: String(message.content) }];
+  const contents = sortContentBlocks(rawContents);
 
   return (
     <div className={`cowork-message cowork-message--${message.role}`}>
