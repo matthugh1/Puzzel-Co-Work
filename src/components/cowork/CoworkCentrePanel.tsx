@@ -14,6 +14,8 @@ import type {
 import { CoworkMessageItem } from "@/components/cowork/CoworkMessageItem";
 import { CoworkInputArea } from "@/components/cowork/CoworkInputArea";
 import { CoworkTodoWidget } from "@/components/cowork/CoworkTodoWidget";
+import { EmptyStateWidget } from "@/components/cowork/EmptyStateWidget";
+import { CapabilitiesPanel } from "@/components/cowork/CapabilitiesPanel";
 import { useCowork, useCoworkActions } from "@/lib/cowork/context";
 import {
   IconMenu,
@@ -43,6 +45,7 @@ export function CoworkCentrePanel({
   onToggleSidebar,
 }: CoworkCentrePanelProps) {
   const [activeTab, setActiveTab] = useState<CentreTab>("chat");
+  const [capabilitiesOpen, setCapabilitiesOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { state, dispatch } = useCowork();
@@ -599,16 +602,7 @@ export function CoworkCentrePanel({
         <>
           <div className="cowork-messages">
             {messages.length === 0 ? (
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "100%",
-                color: "var(--color-text-muted)",
-                fontSize: "0.9375rem"
-              }}>
-                Send a message to start working on this task
-              </div>
+              <EmptyStateWidget onOpenCapabilities={() => setCapabilitiesOpen(true)} />
             ) : (
               messages.map((msg) => (
                 <CoworkMessageItem key={msg.id} message={msg} />
@@ -636,6 +630,7 @@ export function CoworkCentrePanel({
             defaultProvider={settings?.defaultProvider}
             defaultModel={settings?.defaultModel || session.model || "claude-sonnet-4-20250514"}
           />
+          <CapabilitiesPanel isOpen={capabilitiesOpen} onClose={() => setCapabilitiesOpen(false)} />
         </>
       ) : (
         <div style={{ flex: 1, overflow: "auto", padding: 24 }}>
