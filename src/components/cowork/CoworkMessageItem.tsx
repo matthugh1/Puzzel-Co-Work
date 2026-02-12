@@ -455,13 +455,51 @@ function SubAgentStatusBlock({
 
   const completedCount = liveAgents.filter((a) => a.status === "completed").length;
   const runningCount = liveAgents.filter((a) => a.status === "running").length;
+  const allCompleted = liveAgents.length > 0 && completedCount === liveAgents.length;
+  const [isCollapsed, setIsCollapsed] = useState(true);
+
+  const toggleCollapsed = useCallback(() => {
+    if (allCompleted) setIsCollapsed((c) => !c);
+  }, [allCompleted]);
+
+  const showList = !allCompleted || !isCollapsed;
 
   return (
     <div className="cowork-agent-card">
-      <div className="cowork-agent-card__header">
+      <div
+        className="cowork-agent-card__header"
+        role={allCompleted ? "button" : undefined}
+        onClick={allCompleted ? toggleCollapsed : undefined}
+        onKeyDown={
+          allCompleted
+            ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggleCollapsed();
+                }
+              }
+            : undefined
+        }
+        tabIndex={allCompleted ? 0 : undefined}
+        style={allCompleted ? { cursor: "pointer" } : undefined}
+        aria-expanded={allCompleted ? !isCollapsed : undefined}
+        aria-label={allCompleted ? (isCollapsed ? "Expand sub-agents" : "Collapse sub-agents") : undefined}
+      >
         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <IconGitBranch size={14} />
-          Sub-agents
+          {allCompleted ? (
+            isCollapsed ? (
+              <IconChevronRight size={14} aria-hidden />
+            ) : (
+              <IconChevronDown size={14} aria-hidden />
+            )
+          ) : (
+            <IconGitBranch size={14} />
+          )}
+          {allCompleted && isCollapsed ? (
+            <>Completed {completedCount} task{completedCount !== 1 ? "s" : ""}</>
+          ) : (
+            <>Sub-agents</>
+          )}
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: "0.6875rem", color: "var(--color-text-muted)" }}>
@@ -470,7 +508,10 @@ function SubAgentStatusBlock({
           {runningCount > 0 && (
             <button
               className="cowork-input__btn"
-              onClick={handleCancelAll}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCancelAll();
+              }}
               style={{ fontSize: "0.6875rem", padding: "2px 8px" }}
               title="Cancel all running agents"
             >
@@ -479,6 +520,7 @@ function SubAgentStatusBlock({
           )}
         </div>
       </div>
+      {showList && (
       <div className="cowork-agent-card__list">
         {liveAgents.map((agent) => {
           const isRunning = agent.status === "running";
@@ -528,6 +570,7 @@ function SubAgentStatusBlock({
           );
         })}
       </div>
+      )}
     </div>
   );
 }
