@@ -1,8 +1,17 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV !== "production";
+
 const nextConfig: NextConfig = {
-  // Mark packages as external to avoid bundling issues
-  serverExternalPackages: ["@prisma/client", ".prisma/client"],
+  // Mark packages as external to avoid bundling issues (Part 1 rebuild guide)
+  serverExternalPackages: [
+    "@prisma/client",
+    ".prisma/client",
+    "@anthropic-ai/sdk",
+    "openai",
+    "docx",
+    "xlsx",
+  ],
 
   // Security headers
   async headers() {
@@ -47,7 +56,8 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'", // unsafe-inline needed for Tailwind
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self'",
+              // In dev, Turbopack HMR needs WebSocket connections for React hydration
+              isDev ? "connect-src 'self' ws://localhost:3002 ws://127.0.0.1:3002" : "connect-src 'self'",
               "frame-ancestors 'self'",
             ].join("; "),
           },
@@ -67,7 +77,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Access-Control-Allow-Headers",
-            value: "Content-Type, Authorization",
+            value: "Content-Type, Authorization, X-CSRF-Token",
           },
           {
             key: "Access-Control-Max-Age",
