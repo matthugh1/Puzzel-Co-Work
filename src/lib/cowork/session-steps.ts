@@ -26,7 +26,7 @@ const SUMMARY_MAX = 60;
 
 function summarizeInput(input: Record<string, unknown>): string | undefined {
   const path = ["path", "filePath", "file", "fileName"].find(
-    (k) => typeof input[k] === "string"
+    (k) => typeof input[k] === "string",
   );
   const pathVal = path ? (input[path] as string) : undefined;
   const command = typeof input.command === "string" ? input.command : undefined;
@@ -41,7 +41,8 @@ function summarizeResult(content: string, isError: boolean): string {
   const raw = content.trim();
   if (!raw) return isError ? "Error" : "Done";
   const oneLine = raw.replace(/\s+/g, " ").trim();
-  if (oneLine.length > SUMMARY_MAX) return oneLine.slice(0, SUMMARY_MAX - 1) + "…";
+  if (oneLine.length > SUMMARY_MAX)
+    return oneLine.slice(0, SUMMARY_MAX - 1) + "…";
   return oneLine;
 }
 
@@ -56,14 +57,20 @@ function isToolResult(block: MessageContent): block is ToolResultContent {
 function getAssistantTextSummary(content: MessageContent[]): string | null {
   const parts: string[] = [];
   for (const block of content) {
-    if (block.type === "text" && "text" in block && typeof block.text === "string") {
+    if (
+      block.type === "text" &&
+      "text" in block &&
+      typeof block.text === "string"
+    ) {
       parts.push(block.text.trim());
     }
   }
   const combined = parts.join("\n").trim();
   if (combined.length < 40) return null;
   const firstLine = combined.split(/\n/)[0]?.trim() ?? combined;
-  return firstLine.length > SUMMARY_MAX ? firstLine.slice(0, SUMMARY_MAX - 1) + "…" : firstLine;
+  return firstLine.length > SUMMARY_MAX
+    ? firstLine.slice(0, SUMMARY_MAX - 1) + "…"
+    : firstLine;
 }
 
 /**
@@ -73,7 +80,9 @@ function getAssistantTextSummary(content: MessageContent[]): string | null {
  * When an assistant message has substantial text before tool calls (e.g. poem
  * then CreateDocument), a "Response" step is added so Progress shows the full flow.
  */
-export function getSessionStepsFromMessages(messages: CoworkMessage[]): SessionStep[] {
+export function getSessionStepsFromMessages(
+  messages: CoworkMessage[],
+): SessionStep[] {
   interface Pending {
     id: string;
     name: string;
@@ -109,7 +118,8 @@ export function getSessionStepsFromMessages(messages: CoworkMessage[]): SessionS
         // Skip tools that have their own UI (todo widget, plan block, etc.)
         if (HIDDEN_STEP_TOOLS.has(block.name)) continue;
 
-        const input = block.input && typeof block.input === "object" ? block.input : {};
+        const input =
+          block.input && typeof block.input === "object" ? block.input : {};
         pending.set(block.id, {
           id: block.id,
           name: block.name,
@@ -125,7 +135,10 @@ export function getSessionStepsFromMessages(messages: CoworkMessage[]): SessionS
             id: p.id,
             name: p.name,
             inputSummary: p.inputSummary,
-            resultSummary: summarizeResult(block.content, block.is_error ?? false),
+            resultSummary: summarizeResult(
+              block.content,
+              block.is_error ?? false,
+            ),
             order: p.order,
           });
           pending.delete(block.tool_use_id);
@@ -136,7 +149,9 @@ export function getSessionStepsFromMessages(messages: CoworkMessage[]): SessionS
   }
 
   // Append any tool_uses that never got a result (e.g. in-flight or error)
-  const remaining = Array.from(pending.values()).sort((a, b) => a.order - b.order);
+  const remaining = Array.from(pending.values()).sort(
+    (a, b) => a.order - b.order,
+  );
   for (const p of remaining) {
     result.push({
       id: p.id,
@@ -156,7 +171,7 @@ export function getSessionStepsFromMessages(messages: CoworkMessage[]): SessionS
  */
 export function getSessionWorkflowSeed(
   messages: CoworkMessage[],
-  options?: { sessionTitle?: string }
+  options?: { sessionTitle?: string },
 ): SessionWorkflowSeed | null {
   const firstUser = messages.find((m) => m.role === "user");
   const initialPrompt =

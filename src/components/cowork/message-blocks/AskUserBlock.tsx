@@ -11,9 +11,18 @@ export function AskUserBlock({
 }: {
   questionId: string;
   sessionId: string;
-  question: { id: string; prompt: string; options: Array<{ id: string; label: string }>; allowMultiple?: boolean } | undefined;
+  question:
+    | {
+        id: string;
+        prompt: string;
+        options: Array<{ id: string; label: string }>;
+        allowMultiple?: boolean;
+      }
+    | undefined;
 }) {
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
+  const [selectedAnswers, setSelectedAnswers] = useState<
+    Record<string, string>
+  >({});
   const [resolved, setResolved] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
   const { dispatch } = useCowork();
@@ -77,11 +86,13 @@ export function AskUserBlock({
       <div className="cowork-interactive-card__body">{question.prompt}</div>
       {resolved ? (
         <div className="cowork-interactive-card__actions">
-          <span style={{
-            fontSize: "0.8125rem",
-            fontWeight: 500,
-            color: "var(--cw-success)",
-          }}>
+          <span
+            style={{
+              fontSize: "0.8125rem",
+              fontWeight: 500,
+              color: "var(--cw-success)",
+            }}
+          >
             Answered: {Object.values(selectedAnswers).join(", ")}
           </span>
         </div>

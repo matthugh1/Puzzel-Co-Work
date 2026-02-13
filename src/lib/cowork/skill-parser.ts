@@ -23,12 +23,21 @@ const LABEL_PATTERNS = [
   ["Status", "status"],
 ] as const;
 
-const PARAMETER_TYPES = ["text", "textarea", "select", "number", "boolean"] as const;
+const PARAMETER_TYPES = [
+  "text",
+  "textarea",
+  "select",
+  "number",
+  "boolean",
+] as const;
 
 /** Match **Label:** value (PRD format) */
 function parseBoldLabel(text: string, label: string): string | undefined {
   const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const re = new RegExp(`\\*\\*${escaped}:\\*\\*\\s*(.+?)(?=\\n\\*\\*|\\n\\n|\\n\`\`\`|$)`, "s");
+  const re = new RegExp(
+    `\\*\\*${escaped}:\\*\\*\\s*(.+?)(?=\\n\\*\\*|\\n\\n|\\n\`\`\`|$)`,
+    "s",
+  );
   const m = text.match(re);
   const val = m?.[1];
   return val != null ? val.trim() : undefined;
@@ -36,7 +45,9 @@ function parseBoldLabel(text: string, label: string): string | undefined {
 
 /** Extract system prompt from fenced code block after **System Prompt:** */
 function extractSystemPrompt(text: string): string | undefined {
-  const m = text.match(/\*\*System Prompt:\*\*\s*(?:\([^)]*\))?\s*\n+```(?:\w+)?\n([\s\S]*?)```/);
+  const m = text.match(
+    /\*\*System Prompt:\*\*\s*(?:\([^)]*\))?\s*\n+```(?:\w+)?\n([\s\S]*?)```/,
+  );
   const val = m?.[1];
   return val != null ? val.trim() : undefined;
 }
@@ -62,7 +73,10 @@ function parseParametersTable(text: string): SkillParameter[] {
         .map((c) => c.trim());
 
       // Detect header row
-      if (headers.length === 0 && cells.some((c) => c.toLowerCase() === "name")) {
+      if (
+        headers.length === 0 &&
+        cells.some((c) => c.toLowerCase() === "name")
+      ) {
         headers = cells.map((c) => c.toLowerCase());
         continue;
       }
@@ -82,7 +96,9 @@ function parseParametersTable(text: string): SkillParameter[] {
       if (!name) continue;
 
       const typeRaw = (row.type ?? "text").toLowerCase();
-      const type = PARAMETER_TYPES.includes(typeRaw as (typeof PARAMETER_TYPES)[number])
+      const type = PARAMETER_TYPES.includes(
+        typeRaw as (typeof PARAMETER_TYPES)[number],
+      )
         ? (typeRaw as SkillParameter["type"])
         : "text";
 
@@ -91,9 +107,15 @@ function parseParametersTable(text: string): SkillParameter[] {
       let defaultForParam: string | undefined = defaultVal;
 
       if (row.options) {
-        options = row.options.split(",").map((s) => s.trim()).filter(Boolean);
+        options = row.options
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
       } else if (type === "select" && defaultVal && defaultVal.includes(",")) {
-        options = defaultVal.split(",").map((s) => s.trim()).filter(Boolean);
+        options = defaultVal
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
         defaultForParam = undefined;
       }
 
@@ -121,7 +143,9 @@ function parseCommaList(val: string | undefined): string[] {
   if (trimmed.startsWith("[")) {
     try {
       const arr = JSON.parse(trimmed);
-      return Array.isArray(arr) ? arr.filter((x) => typeof x === "string").map(String) : [];
+      return Array.isArray(arr)
+        ? arr.filter((x) => typeof x === "string").map(String)
+        : [];
     } catch {
       /* fall through to comma split */
     }
@@ -136,7 +160,9 @@ function parseCommaList(val: string | undefined): string[] {
  * Parse PRD-format skill markdown into a structured SkillDraft.
  * Returns null if essential fields (name, content) are missing.
  */
-export function parseSkillFromMarkdown(markdown: string): Partial<SkillDraft> | null {
+export function parseSkillFromMarkdown(
+  markdown: string,
+): Partial<SkillDraft> | null {
   const text = markdown.trim();
   if (!text) return null;
 
@@ -150,7 +176,9 @@ export function parseSkillFromMarkdown(markdown: string): Partial<SkillDraft> | 
       } else if (key === "status") {
         (result as Record<string, unknown>)[key] = val;
       } else {
-        (result as Record<string, unknown>)[key] = val.replace(/^["']|["']$/g, "").trim();
+        (result as Record<string, unknown>)[key] = val
+          .replace(/^["']|["']$/g, "")
+          .trim();
       }
     }
   }

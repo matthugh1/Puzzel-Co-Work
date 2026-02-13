@@ -26,14 +26,17 @@ export function PermissionRequestBlock({
         const csrfRes = await fetch("/api/csrf-token");
         const csrfData = await csrfRes.json();
 
-        await fetch(`/api/cowork/sessions/${sessionId}/permissions/${requestId}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": csrfData.token,
+        await fetch(
+          `/api/cowork/sessions/${sessionId}/permissions/${requestId}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRF-Token": csrfData.token,
+            },
+            body: JSON.stringify({ approved }),
           },
-          body: JSON.stringify({ approved }),
-        });
+        );
 
         setResolved(approved ? "approved" : "denied");
         dispatch({ type: "SET_PENDING_PERMISSION", payload: null });
@@ -53,17 +56,29 @@ export function PermissionRequestBlock({
         {title}
       </div>
       <div className="cowork-interactive-card__body">
-        <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "0.8125rem" }}>
+        <pre
+          style={{
+            margin: 0,
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            fontSize: "0.8125rem",
+          }}
+        >
           {description}
         </pre>
       </div>
       <div className="cowork-interactive-card__actions">
         {resolved ? (
-          <span style={{
-            fontSize: "0.8125rem",
-            fontWeight: 500,
-            color: resolved === "approved" ? "var(--cw-success)" : "var(--cw-danger)",
-          }}>
+          <span
+            style={{
+              fontSize: "0.8125rem",
+              fontWeight: 500,
+              color:
+                resolved === "approved"
+                  ? "var(--cw-success)"
+                  : "var(--cw-danger)",
+            }}
+          >
             {resolved === "approved" ? "Allowed" : "Denied"}
           </span>
         ) : (

@@ -89,7 +89,10 @@ export function FeedbackSummarySection({
         )}
         <span>Feedback</span>
         {negativeFeedback.length > 0 && !open && (
-          <span className="cowork-right-panel__section-badge" aria-label={`${negativeFeedback.length} issues flagged`}>
+          <span
+            className="cowork-right-panel__section-badge"
+            aria-label={`${negativeFeedback.length} issues flagged`}
+          >
             {negativeFeedback.length}
           </span>
         )}
@@ -107,7 +110,8 @@ export function FeedbackSummarySection({
           ) : (
             <>
               <p className="cw-rpanel-feedback-count">
-                {negativeFeedback.length} message{negativeFeedback.length !== 1 ? "s" : ""} flagged
+                {negativeFeedback.length} message
+                {negativeFeedback.length !== 1 ? "s" : ""} flagged
               </p>
               <ul className="cw-rpanel-feedback-list">
                 {negativeFeedback.map((f) => (

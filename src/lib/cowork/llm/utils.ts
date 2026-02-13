@@ -11,25 +11,34 @@ import type { CanonicalToolInputSchema } from "./types";
  * - Properties not in the original required list get null added to their type
  * - Recurses into nested objects and array items
  */
-export function enforceStrictSchema(schema: CanonicalToolInputSchema): Record<string, unknown> {
+export function enforceStrictSchema(
+  schema: CanonicalToolInputSchema,
+): Record<string, unknown> {
   return enforceStrictSchemaRecursive(schema as Record<string, unknown>);
 }
 
-function enforceStrictSchemaRecursive(schema: Record<string, unknown>): Record<string, unknown> {
+function enforceStrictSchemaRecursive(
+  schema: Record<string, unknown>,
+): Record<string, unknown> {
   const type = schema.type;
 
   // Array: recurse into items
   if (type === "array" && schema.items && typeof schema.items === "object") {
     return {
       ...schema,
-      items: enforceStrictSchemaRecursive(schema.items as Record<string, unknown>),
+      items: enforceStrictSchemaRecursive(
+        schema.items as Record<string, unknown>,
+      ),
     };
   }
 
   // Not an object: return as-is
   if (type !== "object") return schema;
 
-  const properties = (schema.properties ?? {}) as Record<string, Record<string, unknown>>;
+  const properties = (schema.properties ?? {}) as Record<
+    string,
+    Record<string, unknown>
+  >;
   const required = (schema.required ?? []) as string[];
   const allPropertyNames = Object.keys(properties);
   const strictProperties: Record<string, unknown> = {};
@@ -41,7 +50,9 @@ function enforceStrictSchemaRecursive(schema: Record<string, unknown>): Record<s
     // If this property wasn't originally required, make it nullable
     if (!required.includes(key) && processed.type !== undefined) {
       const currentType = processed.type;
-      const types = Array.isArray(currentType) ? currentType as string[] : [currentType as string];
+      const types = Array.isArray(currentType)
+        ? (currentType as string[])
+        : [currentType as string];
       if (!types.includes("null")) {
         processed = { ...processed, type: [...types, "null"] };
       }

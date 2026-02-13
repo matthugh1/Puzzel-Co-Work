@@ -100,11 +100,13 @@ export function checkWantsDocumentFollowUp(
 
   // If the conversation is about skill creation, never inject document follow-up.
   // Check last user message AND recent message history for skill creation context.
-  const skillPattern = /\b(create|build|make|new|draft)\b.*\bskill\b|\bskill\b.*\b(create|build|make|draft)\b/i;
+  const skillPattern =
+    /\b(create|build|make|new|draft)\b.*\bskill\b|\bskill\b.*\b(create|build|make|draft)\b/i;
   if (skillPattern.test(lastUserContent)) return false;
 
   // Also check the LLM's response — if it mentions CreateSkill or skill drafting, skip
-  if (/\bCreateSkill\b|\bskill\s+name\b|\bskill\s+draft\b/i.test(fullText)) return false;
+  if (/\bCreateSkill\b|\bskill\s+name\b|\bskill\s+draft\b/i.test(fullText))
+    return false;
 
   // Also check recent user messages (last 4) for skill creation intent
   const recentUserMessages = messages
@@ -239,15 +241,28 @@ export function prepareToolInput(
 
   // Emit preliminary todo_update when TodoWrite is about to run so the plan appears immediately
   if (toolCall.name === "TodoWrite") {
-    const input = toolCall.input as { todos?: Array<{ id?: string; content?: string; activeForm?: string; status?: string; sortOrder?: number }> };
+    const input = toolCall.input as {
+      todos?: Array<{
+        id?: string;
+        content?: string;
+        activeForm?: string;
+        status?: string;
+        sortOrder?: number;
+      }>;
+    };
     if (Array.isArray(input.todos) && input.todos.length > 0) {
       const now = new Date().toISOString();
       const preliminaryTodos = input.todos.map((t, i) => ({
-        id: t.id && String(t.id).trim() !== "" ? String(t.id) : `prelim-${toolCall.id}-${i}`,
+        id:
+          t.id && String(t.id).trim() !== ""
+            ? String(t.id)
+            : `prelim-${toolCall.id}-${i}`,
         sessionId: "",
         content: typeof t.content === "string" ? t.content : "Task",
         activeForm: typeof t.activeForm === "string" ? t.activeForm : "Working",
-        status: (t.status === "in_progress" || t.status === "completed" ? t.status : "pending") as "pending" | "in_progress" | "completed",
+        status: (t.status === "in_progress" || t.status === "completed"
+          ? t.status
+          : "pending") as "pending" | "in_progress" | "completed",
         createdAt: now,
         updatedAt: now,
       }));
@@ -354,8 +369,7 @@ export async function handleToolSideEffects(
   ) {
     try {
       const artifactPath = toolResult.metadata.artifactPath as string;
-      const artifactFileName = toolResult.metadata
-        .artifactFileName as string;
+      const artifactFileName = toolResult.metadata.artifactFileName as string;
       const fileContent = (toolCall.input as { content: string }).content;
 
       const artifact = await config.createArtifact(

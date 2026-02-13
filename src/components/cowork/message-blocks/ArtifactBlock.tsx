@@ -32,7 +32,9 @@ export function ArtifactBlock({
       <IconFile size={14} />
       <span>{fileName}</span>
       {renderType && (
-        <span style={{ fontSize: "0.6875rem", color: "var(--color-text-muted)" }}>
+        <span
+          style={{ fontSize: "0.6875rem", color: "var(--color-text-muted)" }}
+        >
           {renderType}
         </span>
       )}

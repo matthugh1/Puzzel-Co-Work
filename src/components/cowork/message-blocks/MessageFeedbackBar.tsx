@@ -2,12 +2,19 @@
 
 import { useState, useCallback } from "react";
 import { useCowork } from "@/lib/cowork/context";
-import { IconThumbsUp, IconThumbsDown, IconCheckCircle } from "@/components/cowork/icons";
+import {
+  IconThumbsUp,
+  IconThumbsDown,
+  IconCheckCircle,
+} from "@/components/cowork/icons";
 
 export interface MessageFeedbackBarProps {
   messageId: string;
   sessionId: string;
-  existingFeedback?: { rating: "positive" | "negative"; comment?: string | null } | null;
+  existingFeedback?: {
+    rating: "positive" | "negative";
+    comment?: string | null;
+  } | null;
 }
 
 export function MessageFeedbackBar({
@@ -61,7 +68,10 @@ export function MessageFeedbackBar({
         setRating(value);
         setSubmitted(true);
         setShowForm(false);
-        dispatch({ type: "SET_MESSAGE_FEEDBACK", payload: { messageId, rating: value } });
+        dispatch({
+          type: "SET_MESSAGE_FEEDBACK",
+          payload: { messageId, rating: value },
+        });
       } catch (err) {
         console.error("Feedback submit error:", err);
       } finally {
@@ -92,13 +102,19 @@ export function MessageFeedbackBar({
 
   if (submitted) {
     return (
-      <div className="cowork-message-feedback" role="group" aria-label="Message feedback">
+      <div
+        className="cowork-message-feedback"
+        role="group"
+        aria-label="Message feedback"
+      >
         <span
           className="cowork-message-feedback__btn cowork-message-feedback__btn--submitted"
           aria-label="Feedback sent"
         >
           <IconCheckCircle size={14} />
-          <span style={{ marginLeft: 4, fontSize: "0.75rem" }}>Feedback sent</span>
+          <span style={{ marginLeft: 4, fontSize: "0.75rem" }}>
+            Feedback sent
+          </span>
         </span>
       </div>
     );
@@ -115,7 +131,11 @@ export function MessageFeedbackBar({
   }
 
   return (
-    <div className="cowork-message-feedback" role="group" aria-label="Rate this message">
+    <div
+      className="cowork-message-feedback"
+      role="group"
+      aria-label="Rate this message"
+    >
       <button
         type="button"
         className={`cowork-message-feedback__btn ${rating === "positive" ? "cowork-message-feedback__btn--active" : ""}`}

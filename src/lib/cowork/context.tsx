@@ -19,6 +19,7 @@ import type {
   CoworkMessage,
   CoworkTodoItem,
   CoworkFileRecord,
+  CoworkWorkflow,
   SubAgent,
   PermissionRequest,
   AskQuestion,
@@ -65,6 +66,15 @@ export type CoworkAction =
   // Sub-agent actions
   | { type: "SET_SUB_AGENTS"; payload: SubAgent[] }
   | { type: "UPDATE_SUB_AGENT"; payload: SubAgent }
+  // Workflow actions
+  | { type: "SET_WORKFLOWS"; payload: CoworkWorkflow[] }
+  | { type: "ADD_WORKFLOW"; payload: CoworkWorkflow }
+  | { type: "REMOVE_WORKFLOW"; payload: string }
+  | {
+      type: "UPDATE_WORKFLOW";
+      payload: Partial<CoworkWorkflow> & { id: string };
+    }
+  | { type: "SET_WORKFLOWS_LOADING"; payload: boolean }
   // Settings actions
   | {
       type: "SET_SETTINGS";
@@ -124,6 +134,10 @@ const initialState: CoworkAppState = {
   },
   subAgents: {
     active: [],
+  },
+  workflows: {
+    list: [],
+    loading: false,
   },
   settings: null,
   ui: {
@@ -356,6 +370,43 @@ function coworkReducer(
       return { ...state, subAgents: { ...state.subAgents, active: agents } };
     }
 
+    // Workflows
+    case "SET_WORKFLOWS":
+      return {
+        ...state,
+        workflows: { ...state.workflows, list: action.payload },
+      };
+    case "ADD_WORKFLOW":
+      return {
+        ...state,
+        workflows: {
+          ...state.workflows,
+          list: [action.payload, ...state.workflows.list],
+        },
+      };
+    case "REMOVE_WORKFLOW":
+      return {
+        ...state,
+        workflows: {
+          ...state.workflows,
+          list: state.workflows.list.filter((w) => w.id !== action.payload),
+        },
+      };
+    case "UPDATE_WORKFLOW": {
+      const updated = state.workflows.list.map((w) =>
+        w.id === action.payload.id ? { ...w, ...action.payload } : w,
+      );
+      return {
+        ...state,
+        workflows: { ...state.workflows, list: updated },
+      };
+    }
+    case "SET_WORKFLOWS_LOADING":
+      return {
+        ...state,
+        workflows: { ...state.workflows, loading: action.payload },
+      };
+
     // UI
     case "TOGGLE_SIDEBAR":
       return {
@@ -562,6 +613,32 @@ export function useCoworkActions() {
     updateSubAgent: useCallback(
       (agent: SubAgent) =>
         dispatch({ type: "UPDATE_SUB_AGENT", payload: agent }),
+      [dispatch],
+    ),
+
+    // Workflows
+    setWorkflows: useCallback(
+      (workflows: CoworkWorkflow[]) =>
+        dispatch({ type: "SET_WORKFLOWS", payload: workflows }),
+      [dispatch],
+    ),
+    addWorkflow: useCallback(
+      (workflow: CoworkWorkflow) =>
+        dispatch({ type: "ADD_WORKFLOW", payload: workflow }),
+      [dispatch],
+    ),
+    removeWorkflow: useCallback(
+      (id: string) => dispatch({ type: "REMOVE_WORKFLOW", payload: id }),
+      [dispatch],
+    ),
+    updateWorkflow: useCallback(
+      (workflow: Partial<CoworkWorkflow> & { id: string }) =>
+        dispatch({ type: "UPDATE_WORKFLOW", payload: workflow }),
+      [dispatch],
+    ),
+    setWorkflowsLoading: useCallback(
+      (loading: boolean) =>
+        dispatch({ type: "SET_WORKFLOWS_LOADING", payload: loading }),
       [dispatch],
     ),
 

@@ -209,16 +209,36 @@ export function SkillDraftCard({ content }: SkillDraftCardProps) {
                       borderTop: "1px solid var(--color-border)",
                     }}
                   >
-                    <td style={{ padding: "8px 10px", color: "var(--color-text)" }}>
+                    <td
+                      style={{
+                        padding: "8px 10px",
+                        color: "var(--color-text)",
+                      }}
+                    >
                       {p.name}
                     </td>
-                    <td style={{ padding: "8px 10px", color: "var(--color-text-secondary)" }}>
+                    <td
+                      style={{
+                        padding: "8px 10px",
+                        color: "var(--color-text-secondary)",
+                      }}
+                    >
                       {p.type}
                     </td>
-                    <td style={{ padding: "8px 10px", color: "var(--color-text-secondary)" }}>
+                    <td
+                      style={{
+                        padding: "8px 10px",
+                        color: "var(--color-text-secondary)",
+                      }}
+                    >
                       {p.required ? "Yes" : "No"}
                     </td>
-                    <td style={{ padding: "8px 10px", color: "var(--color-text-secondary)" }}>
+                    <td
+                      style={{
+                        padding: "8px 10px",
+                        color: "var(--color-text-secondary)",
+                      }}
+                    >
                       {p.description || "—"}
                     </td>
                   </tr>
@@ -251,7 +271,9 @@ export function SkillDraftCard({ content }: SkillDraftCardProps) {
               >
                 Example input:
               </span>
-              <span style={{ color: "var(--color-text)" }}>{skill.exampleInput}</span>
+              <span style={{ color: "var(--color-text)" }}>
+                {skill.exampleInput}
+              </span>
             </div>
           )}
           {skill.exampleOutput && (
@@ -265,7 +287,9 @@ export function SkillDraftCard({ content }: SkillDraftCardProps) {
               >
                 Example output:
               </span>
-              <span style={{ color: "var(--color-text)" }}>{skill.exampleOutput}</span>
+              <span style={{ color: "var(--color-text)" }}>
+                {skill.exampleOutput}
+              </span>
             </div>
           )}
         </div>

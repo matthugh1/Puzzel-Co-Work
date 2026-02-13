@@ -10,9 +10,14 @@ import {
 } from "@/components/cowork/icons";
 
 /** One-line summary for the tool (e.g. "Read package.json", "Bash npm run build"). */
-function toolSummary(name: string, input?: Record<string, unknown>): string | null {
+function toolSummary(
+  name: string,
+  input?: Record<string, unknown>,
+): string | null {
   if (!input || typeof input !== "object") return null;
-  const path = [input.path, input.filePath, input.file].find((v) => typeof v === "string") as string | undefined;
+  const path = [input.path, input.filePath, input.file].find(
+    (v) => typeof v === "string",
+  ) as string | undefined;
   const command = typeof input.command === "string" ? input.command : undefined;
   const query = typeof input.query === "string" ? input.query : undefined;
   const pattern = typeof input.pattern === "string" ? input.pattern : undefined;
@@ -77,7 +82,10 @@ export function ToolActivityBlock({
         {/* Status indicator */}
         <span className="cw-tool-activity__status">
           {isPending ? (
-            <IconLoader size={14} className="cw-tool-activity__spinner cw-icon-spin" />
+            <IconLoader
+              size={14}
+              className="cw-tool-activity__spinner cw-icon-spin"
+            />
           ) : isError ? (
             <IconAlertTriangle size={14} />
           ) : (
@@ -97,7 +105,11 @@ export function ToolActivityBlock({
 
         {/* Expand chevron — pushed to far right */}
         <span className="cw-tool-activity__chevron">
-          {open ? <IconChevronDown size={12} /> : <IconChevronRight size={12} />}
+          {open ? (
+            <IconChevronDown size={12} />
+          ) : (
+            <IconChevronRight size={12} />
+          )}
         </span>
       </button>
 

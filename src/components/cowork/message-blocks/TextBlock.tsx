@@ -6,10 +6,7 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import {
-  IconCopy,
-  IconCheckCircle,
-} from "@/components/cowork/icons";
+import { IconCopy, IconCheckCircle } from "@/components/cowork/icons";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -92,14 +89,18 @@ export function TextBlock({ text }: { text: string }) {
           // Code blocks without a language still get copy button
           pre({ children }) {
             // If the child is already a syntax-highlighted block, pass through
-            const child = React.Children.only(children) as React.ReactElement<{ className?: string; children?: string }>;
+            const child = React.Children.only(children) as React.ReactElement<{
+              className?: string;
+              children?: string;
+            }>;
             if (child?.props?.className?.includes("language-")) {
               return <>{children}</>;
             }
             // Plain code block
-            const codeText = typeof child?.props?.children === "string"
-              ? child.props.children
-              : "";
+            const codeText =
+              typeof child?.props?.children === "string"
+                ? child.props.children
+                : "";
             return (
               <div className="cw-code-block-wrapper">
                 <div className="cw-code-block-header">

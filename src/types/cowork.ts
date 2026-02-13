@@ -121,6 +121,23 @@ export interface SessionWorkflowSeed {
 /** Reserved: workflow runtime context passed between steps as JSON (inputs + outputs). */
 export type WorkflowContext = Record<string, unknown>;
 
+/** A saved workflow — a replayable automation created from a session. */
+export interface CoworkWorkflow {
+  id: string;
+  userId: string;
+  organizationId: string;
+  name: string;
+  description?: string;
+  initialPrompt: string;
+  steps: SessionStep[];
+  sourceSessionId?: string;
+  tags: string[];
+  runCount: number;
+  lastRunAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface FileReferenceContent {
   type: "file_reference";
   fileId: string;
@@ -395,6 +412,10 @@ export interface CoworkAppState {
   };
   subAgents: {
     active: SubAgent[];
+  };
+  workflows: {
+    list: CoworkWorkflow[];
+    loading: boolean;
   };
   settings: CoworkSettings | null;
   ui: {
