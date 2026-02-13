@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import type {
   CoworkSession,
   CoworkMessage,
-  CoworkTodoItem,
   CoworkFileRecord,
   MessageContent,
   PermissionRequest,
@@ -13,7 +12,6 @@ import type {
 } from "@/types/cowork";
 import { CoworkMessageItem } from "@/components/cowork/CoworkMessageItem";
 import { CoworkInputArea } from "@/components/cowork/CoworkInputArea";
-import { CoworkTodoWidget } from "@/components/cowork/CoworkTodoWidget";
 import { EmptyStateWidget } from "@/components/cowork/EmptyStateWidget";
 import { CapabilitiesPanel } from "@/components/cowork/CapabilitiesPanel";
 import { useCowork, useCoworkActions } from "@/lib/cowork/context";
@@ -28,23 +26,18 @@ import {
 interface CoworkCentrePanelProps {
   session: CoworkSession | null;
   messages: CoworkMessage[];
-  todos: CoworkTodoItem[];
   isStreaming: boolean;
   settings: import("@/types/cowork").CoworkSettings | null;
   onToggleSidebar: () => void;
 }
 
-type CentreTab = "chat" | "tasks";
-
 export function CoworkCentrePanel({
   session,
   messages,
-  todos,
   isStreaming,
   settings,
   onToggleSidebar,
 }: CoworkCentrePanelProps) {
-  const [activeTab, setActiveTab] = useState<CentreTab>("chat");
   const [capabilitiesOpen, setCapabilitiesOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -53,7 +46,7 @@ export function CoworkCentrePanel({
 
   // Smart auto-scroll - only scroll if user is near bottom
   useEffect(() => {
-    if (activeTab === "chat" && messagesEndRef.current) {
+    if (messagesEndRef.current) {
       const container = messagesEndRef.current.parentElement;
       if (container) {
         const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
@@ -62,7 +55,7 @@ export function CoworkCentrePanel({
         }
       }
     }
-  }, [messages, activeTab]);
+  }, [messages]);
 
   // Poll sub-agent status - only once per session
   useEffect(() => {
@@ -171,9 +164,14 @@ export function CoworkCentrePanel({
     }
   }, [session?.id, state.subAgents?.active, state.chat.messages, dispatch]);
 
-  const completedTodos = todos.filter((t) => t.status === "completed").length;
-  const totalTodos = todos.length;
-  const progressPct = totalTodos > 0 ? Math.round((completedTodos / totalTodos) * 100) : 0;
+  // When a starter message is set (e.g. "New Skill" clicked), send it and clear.
+  useEffect(() => {
+    const msg = state.chat.starterMessage;
+    if (!msg || !session || state.chat.isStreaming) return;
+    actions.setStarterMessage(null);
+    handleSendMessage(msg);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.chat.starterMessage]);
 
   const handleSendMessage = useCallback(
     async (text: string, provider?: string, model?: string) => {
@@ -194,13 +192,15 @@ export function CoworkCentrePanel({
         const csrfRes = await fetch("/api/csrf-token");
         const csrfData = await csrfRes.json();
 
+        const body: Record<string, unknown> = { content: text, provider, model };
+
         const response = await fetch(`/api/cowork/sessions/${session.id}/messages`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "X-CSRF-Token": csrfData.token,
           },
-          body: JSON.stringify({ content: text, provider, model }),
+          body: JSON.stringify(body),
         });
 
         if (!response.ok || !response.body) {
@@ -407,6 +407,17 @@ export function CoworkCentrePanel({
                   break;
                 }
 
+                case "skill_activated": {
+                  const skillData = data.data || data;
+                  const skillBlock: MessageContent = {
+                    type: "skill_activated",
+                    skills: skillData.skills || [],
+                  };
+                  contentBlocks.push(skillBlock);
+                  actions.updateLastMessage({ content: rebuildContent() });
+                  break;
+                }
+
                 case "sub_agent_update": {
                   const agentUpdate = data.data || data;
                   
@@ -471,6 +482,17 @@ export function CoworkCentrePanel({
 
                 case "message_end": {
                   // Streaming is complete
+                  break;
+                }
+
+                case "plan_mode_changed": {
+                  const planMode = data.planMode === true;
+                  if (session) {
+                    dispatch({
+                      type: "UPDATE_SESSION",
+                      payload: { id: session.id, planMode },
+                    });
+                  }
                   break;
                 }
 
@@ -542,7 +564,31 @@ export function CoworkCentrePanel({
 
   return (
     <div className="cowork-centre">
-      {/* Header with tabs */}
+      {/* Plan mode banner */}
+      {session?.planMode && (
+        <div
+          className="cowork-plan-mode-banner"
+          style={{
+            padding: "8px 12px",
+            fontSize: "0.8125rem",
+            background: "var(--color-surface-alt, #f5f3ff)",
+            color: "var(--color-text-secondary)",
+            borderBottom: "1px solid var(--color-border, #e5e2ec)",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+          role="status"
+          aria-live="polite"
+        >
+          <IconList size={16} />
+          <span>
+            Plan mode: only read-only tools (Read, Glob, Grep, WebSearch, WebFetch) are available.
+            Approve a plan to continue with full tools.
+          </span>
+        </div>
+      )}
+      {/* Header */}
       <div className="cowork-centre__header">
         <div style={{ display: "flex", alignItems: "center", gap: 8, height: "100%" }}>
           <button
@@ -554,28 +600,13 @@ export function CoworkCentrePanel({
             <IconMenu size={18} />
           </button>
           <div className="cowork-centre__tabs">
-            <button
-              className={`cowork-centre__tab ${activeTab === "chat" ? "cowork-centre__tab--active" : ""}`}
-              onClick={() => setActiveTab("chat")}
-            >
+            <span className="cowork-centre__tab cowork-centre__tab--active" style={{ cursor: "default" }}>
               <IconMessageSquare size={14} />
               Chat
               {messages.length > 0 && (
                 <span className="cowork-centre__tab-badge">{messages.length}</span>
               )}
-            </button>
-            <button
-              className={`cowork-centre__tab ${activeTab === "tasks" ? "cowork-centre__tab--active" : ""}`}
-              onClick={() => setActiveTab("tasks")}
-            >
-              <IconList size={14} />
-              Tasks
-              {totalTodos > 0 && (
-                <span className="cowork-centre__tab-badge">
-                  {completedTodos}/{totalTodos}
-                </span>
-              )}
-            </button>
+            </span>
           </div>
         </div>
         <div className="cowork-centre__actions">
@@ -583,23 +614,15 @@ export function CoworkCentrePanel({
             className="cowork-input__btn"
             onClick={actions.toggleRightPanel}
             aria-label="Toggle side panel"
-            title="Toggle artifacts panel"
+            title="Artifacts, Files & Tasks"
           >
             <IconPanelRight size={18} />
           </button>
         </div>
       </div>
 
-      {/* Progress bar */}
-      {totalTodos > 0 && (
-        <div className="cowork-progress-bar">
-          <div className="cowork-progress-bar__fill" style={{ width: `${progressPct}%` }} />
-        </div>
-      )}
-
       {/* Content */}
-      {activeTab === "chat" ? (
-        <>
+      <>
           <div className="cowork-messages">
             {messages.length === 0 ? (
               <EmptyStateWidget onOpenCapabilities={() => setCapabilitiesOpen(true)} />
@@ -631,30 +654,7 @@ export function CoworkCentrePanel({
             defaultModel={settings?.defaultModel || session.model || "claude-sonnet-4-20250514"}
           />
           <CapabilitiesPanel isOpen={capabilitiesOpen} onClose={() => setCapabilitiesOpen(false)} />
-        </>
-      ) : (
-        <div style={{ flex: 1, overflow: "auto", padding: 24 }}>
-          {todos.length === 0 ? (
-            <div style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "100%",
-              color: "var(--color-text-muted)",
-              gap: 8,
-            }}>
-              <IconList size={32} />
-              <span style={{ fontSize: "0.9375rem" }}>No tasks yet</span>
-              <span style={{ fontSize: "0.8125rem" }}>Tasks will appear as your agent works</span>
-            </div>
-          ) : (
-            <div style={{ maxWidth: 640, margin: "0 auto" }}>
-              <CoworkTodoWidget items={todos} />
-            </div>
-          )}
-        </div>
-      )}
+      </>
     </div>
   );
 }

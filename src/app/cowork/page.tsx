@@ -1,15 +1,38 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useMemo, useState } from "react";
+import Link from "next/link";
 import { useCowork, useCoworkActions } from "@/lib/cowork/context";
 import { CoworkSidebar } from "@/components/cowork/CoworkSidebar";
 import { CoworkCentrePanel } from "@/components/cowork/CoworkCentrePanel";
 import { CoworkRightPanel } from "@/components/cowork/CoworkRightPanel";
+import { CreateSkillModal } from "@/components/cowork/CreateSkillModal";
 import type { CoworkSession } from "@/types/cowork";
+import { getSessionStepsFromMessages } from "@/lib/cowork/session-steps";
+
+export type SessionError = "unauthorized" | "forbidden" | "create_failed" | null;
 
 export default function CoworkPage() {
   const { state } = useCowork();
   const actions = useCoworkActions();
+  const [sessionError, setSessionError] = useState<SessionError>(null);
+  const [createSkillModalOpen, setCreateSkillModalOpen] = useState(false);
+
+  const toolsUsedInChat = useMemo(() => {
+    const names = new Set<string>();
+    for (const msg of state.chat.messages) {
+      if (msg.role !== "assistant") continue;
+      for (const block of msg.content ?? []) {
+        if (block.type === "tool_use" && "name" in block) names.add(block.name);
+      }
+    }
+    return Array.from(names);
+  }, [state.chat.messages]);
+
+  const sessionSteps = useMemo(
+    () => getSessionStepsFromMessages(state.chat.messages),
+    [state.chat.messages]
+  );
 
   // Load sessions and settings on mount
   useEffect(() => {
@@ -20,14 +43,19 @@ export default function CoworkPage() {
 
   const loadSessions = useCallback(async () => {
     actions.setSessionsLoading(true);
+    setSessionError(null);
     try {
       const res = await fetch("/api/cowork/sessions");
       if (res.ok) {
         const data = await res.json();
         actions.setSessions(data.sessions || []);
+      } else if (res.status === 401) {
+        setSessionError("unauthorized");
+      } else if (res.status === 403) {
+        setSessionError("forbidden");
       }
     } catch {
-      // Silently handle - sessions list will be empty
+      setSessionError("unauthorized");
     } finally {
       actions.setSessionsLoading(false);
     }
@@ -51,6 +79,7 @@ export default function CoworkPage() {
   }, [actions]);
 
   const handleCreateSession = useCallback(async () => {
+    setSessionError(null);
     try {
       const csrfRes = await fetch("/api/csrf-token");
       const csrfData = await csrfRes.json();
@@ -75,9 +104,15 @@ export default function CoworkPage() {
         actions.setOutputs([]);
         actions.setSubAgents([]);
         actions.setActiveArtifact(null);
+      } else if (res.status === 401) {
+        setSessionError("unauthorized");
+      } else if (res.status === 403) {
+        setSessionError("forbidden");
+      } else {
+        setSessionError("create_failed");
       }
     } catch {
-      // Handle error silently
+      setSessionError("create_failed");
     }
   }, [actions]);
 
@@ -178,7 +213,63 @@ export default function CoworkPage() {
   );
 
   return (
-    <div className="cowork-layout">
+    <div className="cowork-layout" style={sessionError ? { paddingTop: 52 } : undefined}>
+      {sessionError && (
+        <div
+          className="cowork-session-error"
+          role="alert"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 100,
+            padding: "12px 20px",
+            background: sessionError === "unauthorized" ? "var(--cw-danger-subtle, rgba(239,68,68,0.1))" : "var(--color-surface-secondary)",
+            borderBottom: "1px solid var(--color-border-muted)",
+            fontSize: "0.875rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            flexWrap: "wrap",
+          }}
+        >
+          {sessionError === "unauthorized" && (
+            <>
+              <span>Please log in to use Cowork.</span>
+              <Link
+                href="/login"
+                style={{ color: "var(--color-accent)", fontWeight: 500 }}
+              >
+                Log in
+              </Link>
+            </>
+          )}
+          {sessionError === "forbidden" && (
+            <>
+              <span>Select an organization to use Cowork.</span>
+              <Link
+                href="/"
+                style={{ color: "var(--color-accent)", fontWeight: 500 }}
+              >
+                Go to app
+              </Link>
+            </>
+          )}
+          {sessionError === "create_failed" && (
+            <>
+              <span>Could not create task. Check you are logged in and have an organization selected.</span>
+              <Link
+                href="/login"
+                style={{ color: "var(--color-accent)", fontWeight: 500 }}
+              >
+                Log in
+              </Link>
+            </>
+          )}
+        </div>
+      )}
       <CoworkSidebar
         sessions={state.sessions.list}
         activeSessionId={state.sessions.active?.id || null}
@@ -187,12 +278,17 @@ export default function CoworkPage() {
         onNewTask={handleCreateSession}
         onSelectSession={handleSelectSession}
         onDeleteSession={handleDeleteSession}
+        onOpenCreateSkill={() => {
+          actions.setStarterMessage("I'd like to create a new skill.");
+          if (!state.sessions.active) {
+            handleCreateSession();
+          }
+        }}
       />
 
       <CoworkCentrePanel
         session={state.sessions.active}
         messages={state.chat.messages}
-        todos={state.todos.items}
         isStreaming={state.chat.isStreaming}
         settings={state.settings}
         onToggleSidebar={actions.toggleSidebar}
@@ -200,14 +296,30 @@ export default function CoworkPage() {
 
       <CoworkRightPanel
         isOpen={state.ui.rightPanelOpen}
-        activeTab={state.ui.rightPanelTab}
+        activeSessionId={state.sessions.active?.id ?? null}
         activeArtifact={state.files.activeArtifact}
         uploads={state.files.uploads}
         outputs={state.files.outputs}
+        todos={state.todos.items}
+        toolsUsedInChat={toolsUsedInChat}
+        sessionSteps={sessionSteps}
         onToggle={actions.toggleRightPanel}
-        onTabChange={actions.setRightPanelTab}
         onSelectFile={actions.setActiveArtifact}
+        onOpenCreateSkill={() => {
+          actions.setStarterMessage("I'd like to create a new skill.");
+          if (!state.sessions.active) {
+            handleCreateSession();
+          }
+        }}
       />
+
+      {createSkillModalOpen && (
+        <CreateSkillModal
+          sessionId={state.sessions.active?.id ?? null}
+          onClose={() => setCreateSkillModalOpen(false)}
+          onSuccess={() => setCreateSkillModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

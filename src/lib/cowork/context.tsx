@@ -69,9 +69,10 @@ export type CoworkAction =
   | { type: "SET_SIDEBAR_OPEN"; payload: boolean }
   | { type: "TOGGLE_RIGHT_PANEL" }
   | { type: "SET_RIGHT_PANEL_OPEN"; payload: boolean }
-  | { type: "SET_RIGHT_PANEL_TAB"; payload: "artifacts" | "files" }
+  | { type: "SET_RIGHT_PANEL_TAB"; payload: "artifacts" | "files" | "tasks" | "tools" }
   | { type: "SET_COMMAND_PALETTE_OPEN"; payload: boolean }
-  | { type: "SET_SETTINGS_OPEN"; payload: boolean };
+  | { type: "SET_SETTINGS_OPEN"; payload: boolean }
+  | { type: "SET_STARTER_MESSAGE"; payload: string | null };
 
 // ============================================================================
 // Initial State
@@ -90,6 +91,7 @@ const initialState: CoworkAppState = {
     pendingPermission: null,
     pendingQuestion: null,
     pendingPlan: null,
+    starterMessage: null,
   },
   todos: {
     items: [],
@@ -377,6 +379,12 @@ function coworkReducer(
         ui: { ...state.ui, settingsOpen: action.payload },
       };
 
+    case "SET_STARTER_MESSAGE":
+      return {
+        ...state,
+        chat: { ...state.chat, starterMessage: action.payload },
+      };
+
     default:
       return state;
   }
@@ -538,14 +546,23 @@ export function useCoworkActions() {
       () => dispatch({ type: "TOGGLE_RIGHT_PANEL" }),
       [dispatch],
     ),
+    openRightPanel: useCallback(
+      () => dispatch({ type: "SET_RIGHT_PANEL_OPEN", payload: true }),
+      [dispatch],
+    ),
     setRightPanelTab: useCallback(
-      (tab: "artifacts" | "files") =>
+      (tab: "artifacts" | "files" | "tasks" | "tools") =>
         dispatch({ type: "SET_RIGHT_PANEL_TAB", payload: tab }),
       [dispatch],
     ),
     setCommandPaletteOpen: useCallback(
       (open: boolean) =>
         dispatch({ type: "SET_COMMAND_PALETTE_OPEN", payload: open }),
+      [dispatch],
+    ),
+    setStarterMessage: useCallback(
+      (message: string | null) =>
+        dispatch({ type: "SET_STARTER_MESSAGE", payload: message }),
       [dispatch],
     ),
   };

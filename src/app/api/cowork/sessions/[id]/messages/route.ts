@@ -16,6 +16,8 @@ import {
   type LLMProvider,
 } from "@/lib/cowork/llm";
 import { streamAgentLoop, type ArtifactCreator } from "@/lib/cowork/agent-loop";
+// Force tool registration when this route loads (avoids tools: 0 in agent loop)
+import "@/lib/cowork/tools/register";
 import path from "path";
 import fs from "fs/promises";
 
@@ -158,12 +160,21 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
+    if (!body.content || body.content.length === 0) {
+      return NextResponse.json(
+        { error: "Message content is required" },
+        { status: 400 },
+      );
+    }
+
+    const userMessageText = body.content;
+
     // 8. Save user message
     await db.coworkMessage.create({
       data: {
         sessionId: id,
         role: "USER",
-        content: [{ type: "text", text: body.content }],
+        content: [{ type: "text", text: userMessageText }],
       },
     });
 
@@ -174,9 +185,9 @@ export async function POST(request: Request, context: RouteContext) {
 
     if (messageCount === 1) {
       const title =
-        body.content.length > 60
-          ? body.content.substring(0, 57) + "..."
-          : body.content;
+        userMessageText.length > 60
+          ? userMessageText.substring(0, 57) + "..."
+          : userMessageText;
       await db.coworkSession.update({
         where: { id },
         data: { title },
@@ -291,18 +302,30 @@ export async function POST(request: Request, context: RouteContext) {
       };
     };
 
-    // Artifact creation callback
+    // Artifact creation callback (content optional for binary files already on disk, e.g. CreateDocument)
     const createArtifact: ArtifactCreator = async (filePath, fileName, content, sessionId) => {
       const { mimeType, artifactType } = getFileInfo(fileName);
       const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const downloadUrl = `/api/cowork/sessions/${sessionId}/files/${safeFileName}`;
-      
+      const downloadUrl = `/api/cowork/sessions/${sessionId}/files/${encodeURIComponent(safeFileName)}`;
+
+      let sizeBytes: number;
+      if (content !== undefined) {
+        sizeBytes = Buffer.byteLength(content, "utf-8");
+      } else {
+        try {
+          const stat = await fs.stat(filePath);
+          sizeBytes = stat.size;
+        } catch {
+          sizeBytes = 0;
+        }
+      }
+
       const fileRecord = await db.coworkFile.create({
         data: {
           sessionId,
           fileName: safeFileName,
           mimeType,
-          sizeBytes: Buffer.byteLength(content, "utf-8"),
+          sizeBytes,
           category: "OUTPUT",
           storagePath: filePath,
           downloadUrl,
@@ -478,6 +501,17 @@ export async function POST(request: Request, context: RouteContext) {
               await db.coworkSession.update({
                 where: { id },
                 data: { model },
+              });
+            }
+
+            // If EnterPlanMode was used, persist plan mode on session
+            const usedEnterPlanMode = contentBlocks.some(
+              (b) => (b as { type?: string; name?: string }).type === "tool_use" && (b as { name?: string }).name === "EnterPlanMode"
+            );
+            if (usedEnterPlanMode) {
+              await db.coworkSession.update({
+                where: { id },
+                data: { planMode: true },
               });
             }
           }

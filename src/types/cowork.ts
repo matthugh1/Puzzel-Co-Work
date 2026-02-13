@@ -20,6 +20,7 @@ export interface CoworkSession {
   title: string;
   status: SessionStatus;
   model: ClaudeModel;
+  planMode?: boolean;
   createdAt: string;
   updatedAt: string;
   messages?: CoworkMessage[];
@@ -61,6 +62,7 @@ export type MessageContent =
   | AskUserContent
   | PlanContent
   | SubAgentStatusContent
+  | SkillActivatedContent
   | ErrorContent;
 
 export interface TextContent {
@@ -81,6 +83,39 @@ export interface ToolResultContent {
   content: string;
   is_error: boolean;
 }
+
+/** Ordered step from a session (tool name + optional summaries). Used for Progress UI and future workflow save. */
+export interface SessionStep {
+  id: string;
+  name: string;
+  inputSummary?: string;
+  resultSummary?: string;
+  order: number;
+}
+
+/**
+ * Snapshot of session state needed to create a workflow. The workflow "knows what
+ * it was doing from the start" via initialPrompt; steps describe the actions taken.
+ * When we implement save-as-workflow, we can persist this (or derive it from
+ * messages) so the workflow has trigger + ordered steps + optional input bindings.
+ *
+ * Step-to-step data: at runtime, workflow steps receive and produce a shared
+ * context payload (JSON). Each step's inputs can be bound to the prompt or to
+ * outputs of previous steps; outputs are merged into the context for the next step.
+ */
+export interface SessionWorkflowSeed {
+  /** Initial user message(s) that started the task — the workflow trigger/description. */
+  initialPrompt: string;
+  /** Session title at save time (optional human-readable label). */
+  sessionTitle?: string;
+  /** Ordered steps (tool calls + optional Response) from the session. */
+  steps: SessionStep[];
+  /** Reserved: which step inputs come from prompt vs previous step output. */
+  inputBindings?: Array<{ stepId: string; inputKey: string; source: "prompt" | `step:${string}` }>;
+}
+
+/** Reserved: workflow runtime context passed between steps as JSON (inputs + outputs). */
+export type WorkflowContext = Record<string, unknown>;
 
 export interface FileReferenceContent {
   type: "file_reference";
@@ -124,6 +159,11 @@ export interface PlanContent {
 export interface SubAgentStatusContent {
   type: "sub_agent_status";
   agents: SubAgentSummary[];
+}
+
+export interface SkillActivatedContent {
+  type: "skill_activated";
+  skills: Array<{ id: string; name: string; description: string }>;
 }
 
 export interface ErrorContent {
@@ -331,6 +371,8 @@ export interface CoworkAppState {
     pendingPermission: PermissionRequest | null;
     pendingQuestion: AskQuestion | null;
     pendingPlan: { planId: string; steps: PlanStep[] } | null;
+    /** When set, centre panel sends this message and clears it (e.g. start create-skill flow). */
+    starterMessage: string | null;
   };
   todos: {
     items: CoworkTodoItem[];
@@ -349,7 +391,7 @@ export interface CoworkAppState {
   ui: {
     sidebarOpen: boolean;
     rightPanelOpen: boolean;
-    rightPanelTab: "artifacts" | "files";
+    rightPanelTab: "artifacts" | "files" | "tasks" | "tools";
     commandPaletteOpen: boolean;
     settingsOpen: boolean;
   };

@@ -101,10 +101,75 @@ export const validationSchemas = {
 
   // Cowork message
   sendCoworkMessage: z.object({
-    content: z.string().min(1).max(100000).trim(),
+    content: z.string().max(100000).trim(),
     fileIds: z.array(z.string()).optional(),
     provider: z.enum(["anthropic", "openai"]).optional(),
     model: z.string().min(1).max(100).optional(),
+  }),
+
+  // Skill parameter (for create/update)
+  skillParameter: z.object({
+    name: z.string().min(1).max(80).trim(),
+    label: z.string().min(1).max(120).trim(),
+    type: z.enum(["text", "textarea", "select", "number", "boolean"]),
+    description: z.string().max(500).trim(),
+    required: z.boolean(),
+    default: z.string().max(500).trim().optional(),
+    options: z.array(z.string().max(200)).max(50).optional(),
+  }),
+
+  // Cowork skill create (API + CreateSkill tool)
+  createCoworkSkill: z.object({
+    name: z.string().min(1).max(120).trim(),
+    description: z.string().max(500).trim(),
+    category: z.string().max(80).trim().default("General"),
+    triggers: z.array(z.string().max(80).trim()).max(20).default([]),
+    tags: z.array(z.string().max(80).trim()).max(50).default([]),
+    content: z.string().max(50_000).trim(),
+    parameters: z
+      .array(
+        z.object({
+          name: z.string().min(1).max(80).trim(),
+          label: z.string().min(1).max(120).trim(),
+          type: z.enum(["text", "textarea", "select", "number", "boolean"]),
+          description: z.string().max(500).trim(),
+          required: z.boolean(),
+          default: z.string().max(500).trim().optional(),
+          options: z.array(z.string().max(200)).max(50).optional(),
+        }),
+      )
+      .max(20)
+      .default([]),
+    exampleInput: z.string().max(2_000).trim().optional(),
+    exampleOutput: z.string().max(2_000).trim().optional(),
+    status: z.enum(["draft", "published"]).default("draft"),
+  }),
+
+  // Cowork skill update (partial)
+  updateCoworkSkill: z.object({
+    name: z.string().min(1).max(120).trim().optional(),
+    description: z.string().max(500).trim().optional(),
+    category: z.string().max(80).trim().optional(),
+    triggers: z.array(z.string().max(80).trim()).max(20).optional(),
+    tags: z.array(z.string().max(80).trim()).max(50).optional(),
+    content: z.string().max(50_000).trim().optional(),
+    parameters: z
+      .array(
+        z.object({
+          name: z.string().min(1).max(80).trim(),
+          label: z.string().min(1).max(120).trim(),
+          type: z.enum(["text", "textarea", "select", "number", "boolean"]),
+          description: z.string().max(500).trim(),
+          required: z.boolean(),
+          default: z.string().max(500).trim().optional(),
+          options: z.array(z.string().max(200)).max(50).optional(),
+        }),
+      )
+      .max(20)
+      .optional(),
+    exampleInput: z.string().max(2_000).trim().optional().nullable(),
+    exampleOutput: z.string().max(2_000).trim().optional().nullable(),
+    status: z.enum(["draft", "published"]).optional(),
   }),
 
   // Cowork todo update
