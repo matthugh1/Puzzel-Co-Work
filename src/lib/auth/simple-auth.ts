@@ -40,7 +40,10 @@ async function verifyPassword(
   return bcrypt.compare(password, hash);
 }
 
-async function createToken(user: AuthUser, organizationId?: string): Promise<string> {
+async function createToken(
+  user: AuthUser,
+  organizationId?: string,
+): Promise<string> {
   return new SignJWT({
     sub: user.id,
     email: user.email,

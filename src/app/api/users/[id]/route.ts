@@ -111,7 +111,7 @@ export async function GET(
 
     // Org admin or regular user - can see users in their org or themselves
     const org = await requireOrganization(request);
-    
+
     const isTargetInOrg = targetUser.organizationMemberships.some(
       (m) => m.organizationId === org.id,
     );
@@ -148,10 +148,7 @@ export async function GET(
     });
   } catch (error) {
     console.error("Get user error:", error);
-    return NextResponse.json(
-      { error: "Failed to get user" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to get user" }, { status: 500 });
   }
 }
 
@@ -188,7 +185,7 @@ export async function PUT(
     // Org admin needs permission
     const org = await requireOrganization(request);
     const isOrgAdmin = await isOrganizationAdmin(user.id, org.id);
-    
+
     if (!isOrgAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -319,7 +316,9 @@ export async function PUT(
       id,
       user.id,
       {
-        organizationId: isGlobalAdmin ? body.organizationId : user.organizationId,
+        organizationId: isGlobalAdmin
+          ? body.organizationId
+          : user.organizationId,
         changes: Object.keys(updateData),
       },
       request,

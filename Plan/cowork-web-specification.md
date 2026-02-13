@@ -39,13 +39,13 @@ Cowork is a **task-centric AI agent** — not a chatbot. The user delegates goal
 
 ### Core Principles
 
-| Principle | Description |
-|-----------|-------------|
-| **Task-centric** | Users delegate goals, not prompts. Claude plans, decomposes, and executes. |
-| **Visibility** | Every action Claude takes is visible — progress bars, todo lists, logs, plan previews. |
-| **Controllability** | Users can pause, approve, reject, and redirect at any decision point. |
-| **Deliverability** | Outputs are real files (docx, pptx, xlsx, pdf, html, jsx, svg, mermaid) — not just chat text. |
-| **Parallel execution** | Complex work is split into sub-agents that run concurrently. |
+| Principle                  | Description                                                                                         |
+| -------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Task-centric**           | Users delegate goals, not prompts. Claude plans, decomposes, and executes.                          |
+| **Visibility**             | Every action Claude takes is visible — progress bars, todo lists, logs, plan previews.              |
+| **Controllability**        | Users can pause, approve, reject, and redirect at any decision point.                               |
+| **Deliverability**         | Outputs are real files (docx, pptx, xlsx, pdf, html, jsx, svg, mermaid) — not just chat text.       |
+| **Parallel execution**     | Complex work is split into sub-agents that run concurrently.                                        |
 | **Progressive disclosure** | Skills and context load lazily — metadata first, full instructions on trigger, resources on demand. |
 
 ---
@@ -92,14 +92,14 @@ Cowork is a **task-centric AI agent** — not a chatbot. The user delegates goal
 
 ### Key Backend Services
 
-| Service | Responsibility |
-|---------|---------------|
-| **Session Manager** | Manages user sessions, authentication, rate limiting, and session lifecycle (create, pause, resume, destroy). |
-| **Claude API Proxy** | Manages conversation context, system prompts, tool definitions, and streams responses from the Claude API. |
-| **Tool Execution Engine** | Runs server-side tools (bash commands, file operations, code execution) in isolated containers per session. |
-| **File Store** | Manages uploaded files, generated outputs, and temporary working files. Provides user-facing download URLs. |
-| **Sub-Agent Orchestrator** | Spawns, monitors, and aggregates results from parallel sub-agent tasks. |
-| **Plugin/Skill/MCP Registry** | Stores and serves skill definitions, plugin manifests, and MCP connector configurations. |
+| Service                       | Responsibility                                                                                                |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Session Manager**           | Manages user sessions, authentication, rate limiting, and session lifecycle (create, pause, resume, destroy). |
+| **Claude API Proxy**          | Manages conversation context, system prompts, tool definitions, and streams responses from the Claude API.    |
+| **Tool Execution Engine**     | Runs server-side tools (bash commands, file operations, code execution) in isolated containers per session.   |
+| **File Store**                | Manages uploaded files, generated outputs, and temporary working files. Provides user-facing download URLs.   |
+| **Sub-Agent Orchestrator**    | Spawns, monitors, and aggregates results from parallel sub-agent tasks.                                       |
+| **Plugin/Skill/MCP Registry** | Stores and serves skill definitions, plugin manifests, and MCP connector configurations.                      |
 
 ### Communication Model
 
@@ -157,13 +157,13 @@ The interface has three main zones arranged horizontally:
 
 **Sidebar Component Specifications:**
 
-| Component | Behaviour |
-|-----------|-----------|
-| **New Task Button** | Creates a new session. Navigates to empty chat view. |
-| **Session List** | Sorted by last-active. Shows session title (auto-generated or user-set), timestamp, and a status indicator (active/completed/paused). Click to switch session. Right-click for rename/delete. |
-| **Plugin Section** | Lists installed plugins. Each is expandable to show its skills and slash commands. "Browse Library" opens a modal marketplace. |
-| **Settings** | Opens settings panel (account, connectors, permissions, appearance). |
-| **User Avatar** | Shows current user. Click for account menu. |
+| Component           | Behaviour                                                                                                                                                                                     |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **New Task Button** | Creates a new session. Navigates to empty chat view.                                                                                                                                          |
+| **Session List**    | Sorted by last-active. Shows session title (auto-generated or user-set), timestamp, and a status indicator (active/completed/paused). Click to switch session. Right-click for rename/delete. |
+| **Plugin Section**  | Lists installed plugins. Each is expandable to show its skills and slash commands. "Browse Library" opens a modal marketplace.                                                                |
+| **Settings**        | Opens settings panel (account, connectors, permissions, appearance).                                                                                                                          |
+| **User Avatar**     | Shows current user. Click for account menu.                                                                                                                                                   |
 
 ### 3.3 Centre Panel — Chat & Task View
 
@@ -214,28 +214,28 @@ This is the primary interaction area. It has two sub-zones stacked vertically:
 
 **Message Types (rendered differently):**
 
-| Type | Visual Treatment |
-|------|-----------------|
-| **User message** | Right-aligned or left-aligned with user avatar. Plain text with file attachment chips. |
-| **Claude text** | Left-aligned with Claude avatar. Supports markdown rendering. |
-| **Tool invocation** | Collapsible card showing tool name, parameters, and output. Default: collapsed with summary. |
-| **Todo widget** | Inline card with checkbox list. Updates in real-time via streaming. |
-| **Artifact link** | Clickable file chip that opens the artifact in the right panel. |
-| **Permission request** | Highlighted card with action buttons (Allow/Deny). Blocks further execution until resolved. |
-| **Sub-agent status** | Card showing spawned agents, their descriptions, and individual progress indicators. |
-| **Plan preview** | Expandable card showing Claude's proposed plan. "Approve" / "Reject" / "Edit" buttons. |
-| **Ask User Question** | Interactive card with radio buttons or multi-select options. "Other" free-text option always included. |
-| **Error** | Red-bordered card with error details and suggested remediation. |
+| Type                   | Visual Treatment                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------ |
+| **User message**       | Right-aligned or left-aligned with user avatar. Plain text with file attachment chips.                 |
+| **Claude text**        | Left-aligned with Claude avatar. Supports markdown rendering.                                          |
+| **Tool invocation**    | Collapsible card showing tool name, parameters, and output. Default: collapsed with summary.           |
+| **Todo widget**        | Inline card with checkbox list. Updates in real-time via streaming.                                    |
+| **Artifact link**      | Clickable file chip that opens the artifact in the right panel.                                        |
+| **Permission request** | Highlighted card with action buttons (Allow/Deny). Blocks further execution until resolved.            |
+| **Sub-agent status**   | Card showing spawned agents, their descriptions, and individual progress indicators.                   |
+| **Plan preview**       | Expandable card showing Claude's proposed plan. "Approve" / "Reject" / "Edit" buttons.                 |
+| **Ask User Question**  | Interactive card with radio buttons or multi-select options. "Other" free-text option always included. |
+| **Error**              | Red-bordered card with error details and suggested remediation.                                        |
 
 **Input Area Specifications:**
 
-| Element | Behaviour |
-|---------|-----------|
-| **Text input** | Multi-line, auto-expanding. Supports markdown. Enter to send, Shift+Enter for newline. |
+| Element                | Behaviour                                                                                       |
+| ---------------------- | ----------------------------------------------------------------------------------------------- |
+| **Text input**         | Multi-line, auto-expanding. Supports markdown. Enter to send, Shift+Enter for newline.          |
 | **Attach button (📎)** | Opens file picker. Supports drag-and-drop. Shows attached files as removable chips above input. |
-| **Slash commands (/)** | Typing `/` opens a searchable command palette. Lists available skills and shortcuts. |
-| **Model picker** | Dropdown to select Claude model (Sonnet, Opus, Haiku). Persists per session. |
-| **Send button (▶)** | Sends message. Disabled while Claude is responding. Transforms to ■ (stop) during generation. |
+| **Slash commands (/)** | Typing `/` opens a searchable command palette. Lists available skills and shortcuts.            |
+| **Model picker**       | Dropdown to select Claude model (Sonnet, Opus, Haiku). Persists per session.                    |
+| **Send button (▶)**    | Sends message. Disabled while Claude is responding. Transforms to ■ (stop) during generation.   |
 
 ### 3.4 Right Panel — Artifact Viewer & File Explorer
 
@@ -282,34 +282,34 @@ The right panel is **collapsible** (toggle button on the panel edge) and has two
 
 **Artifact Viewer Specifications:**
 
-| File Type | Rendering Method |
-|-----------|-----------------|
-| `.html` | Sandboxed iframe |
-| `.jsx` | Compiled and rendered in sandboxed iframe with React runtime |
-| `.md` | Rendered to HTML via markdown parser |
-| `.mermaid` | Rendered via Mermaid.js library |
-| `.svg` | Rendered inline as image |
-| `.pdf` | Rendered via PDF.js viewer |
+| File Type                   | Rendering Method                                                          |
+| --------------------------- | ------------------------------------------------------------------------- |
+| `.html`                     | Sandboxed iframe                                                          |
+| `.jsx`                      | Compiled and rendered in sandboxed iframe with React runtime              |
+| `.md`                       | Rendered to HTML via markdown parser                                      |
+| `.mermaid`                  | Rendered via Mermaid.js library                                           |
+| `.svg`                      | Rendered inline as image                                                  |
+| `.pdf`                      | Rendered via PDF.js viewer                                                |
 | `.docx` / `.pptx` / `.xlsx` | Download link + optional preview (convert to PDF server-side for preview) |
-| `.png` / `.jpg` / `.gif` | Rendered inline as image |
-| Code files | Syntax-highlighted code viewer |
+| `.png` / `.jpg` / `.gif`    | Rendered inline as image                                                  |
+| Code files                  | Syntax-highlighted code viewer                                            |
 
 **File Explorer Specifications:**
 
-| Feature | Behaviour |
-|---------|-----------|
-| **Tree view** | Shows `uploads/` and `outputs/` directories. Expandable folders. |
+| Feature          | Behaviour                                                                    |
+| ---------------- | ---------------------------------------------------------------------------- |
+| **Tree view**    | Shows `uploads/` and `outputs/` directories. Expandable folders.             |
 | **File actions** | Click to preview in artifact viewer. Right-click for download/delete/rename. |
-| **Upload** | Drag files into the explorer to upload. Shows upload progress. |
-| **Download** | Click download icon on any output file. |
+| **Upload**       | Drag files into the explorer to upload. Shows upload progress.               |
+| **Download**     | Click download icon on any output file.                                      |
 
 ### 3.5 Responsive Behaviour
 
-| Breakpoint | Layout |
-|------------|--------|
-| **≥1200px** | Full three-column layout |
-| **900–1199px** | Sidebar collapses to icons. Right panel becomes overlay. |
-| **<900px** | Single column. Sidebar = drawer. Right panel = full-screen overlay. Bottom nav for switching. |
+| Breakpoint     | Layout                                                                                        |
+| -------------- | --------------------------------------------------------------------------------------------- |
+| **≥1200px**    | Full three-column layout                                                                      |
+| **900–1199px** | Sidebar collapses to icons. Right panel becomes overlay.                                      |
+| **<900px**     | Single column. Sidebar = drawer. Right panel = full-screen overlay. Bottom nav for switching. |
 
 ---
 
@@ -319,20 +319,20 @@ The right panel is **collapsible** (toggle button on the panel edge) and has two
 
 ```typescript
 interface Session {
-  id: string;                    // UUID
-  userId: string;                // Owner
-  title: string;                 // Auto-generated or user-set
-  status: 'active' | 'paused' | 'completed' | 'error';
-  model: 'claude-sonnet-4-5' | 'claude-opus-4-5' | 'claude-haiku-4-5';
+  id: string; // UUID
+  userId: string; // Owner
+  title: string; // Auto-generated or user-set
+  status: "active" | "paused" | "completed" | "error";
+  model: "claude-sonnet-4-5" | "claude-opus-4-5" | "claude-haiku-4-5";
   createdAt: ISO8601;
   updatedAt: ISO8601;
   messages: Message[];
   todos: TodoItem[];
   files: FileRecord[];
   activeSubAgents: SubAgent[];
-  pluginIds: string[];           // Enabled plugins for this session
-  connectorIds: string[];        // Enabled connectors for this session
-  systemPrompt: string;          // Assembled from base + skills + plugins
+  pluginIds: string[]; // Enabled plugins for this session
+  connectorIds: string[]; // Enabled connectors for this session
+  systemPrompt: string; // Assembled from base + skills + plugins
 }
 ```
 
@@ -342,29 +342,57 @@ interface Session {
 interface Message {
   id: string;
   sessionId: string;
-  role: 'user' | 'assistant' | 'system';
-  content: MessageContent[];     // Array of content blocks
+  role: "user" | "assistant" | "system";
+  content: MessageContent[]; // Array of content blocks
   createdAt: ISO8601;
   metadata: {
     model?: string;
     tokenUsage?: { input: number; output: number };
     toolCalls?: ToolCall[];
-    subAgentId?: string;         // If from a sub-agent
+    subAgentId?: string; // If from a sub-agent
   };
 }
 
 type MessageContent =
-  | { type: 'text'; text: string }
-  | { type: 'tool_use'; id: string; name: string; input: object }
-  | { type: 'tool_result'; tool_use_id: string; content: string; is_error: boolean }
-  | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } }
-  | { type: 'file_reference'; fileId: string; fileName: string; mimeType: string }
-  | { type: 'artifact'; artifactId: string; fileName: string; renderType: ArtifactType }
-  | { type: 'todo_update'; todos: TodoItem[] }
-  | { type: 'permission_request'; requestId: string; action: string; details: object }
-  | { type: 'ask_user'; questionId: string; questions: AskQuestion[] }
-  | { type: 'plan'; planId: string; steps: PlanStep[]; status: 'pending' | 'approved' | 'rejected' }
-  | { type: 'sub_agent_status'; agents: SubAgentSummary[] };
+  | { type: "text"; text: string }
+  | { type: "tool_use"; id: string; name: string; input: object }
+  | {
+      type: "tool_result";
+      tool_use_id: string;
+      content: string;
+      is_error: boolean;
+    }
+  | {
+      type: "image";
+      source: { type: "base64"; media_type: string; data: string };
+    }
+  | {
+      type: "file_reference";
+      fileId: string;
+      fileName: string;
+      mimeType: string;
+    }
+  | {
+      type: "artifact";
+      artifactId: string;
+      fileName: string;
+      renderType: ArtifactType;
+    }
+  | { type: "todo_update"; todos: TodoItem[] }
+  | {
+      type: "permission_request";
+      requestId: string;
+      action: string;
+      details: object;
+    }
+  | { type: "ask_user"; questionId: string; questions: AskQuestion[] }
+  | {
+      type: "plan";
+      planId: string;
+      steps: PlanStep[];
+      status: "pending" | "approved" | "rejected";
+    }
+  | { type: "sub_agent_status"; agents: SubAgentSummary[] };
 ```
 
 ### 4.3 TodoItem
@@ -373,9 +401,9 @@ type MessageContent =
 interface TodoItem {
   id: string;
   sessionId: string;
-  content: string;               // Imperative form: "Run tests"
-  activeForm: string;            // Present continuous: "Running tests"
-  status: 'pending' | 'in_progress' | 'completed';
+  content: string; // Imperative form: "Run tests"
+  activeForm: string; // Present continuous: "Running tests"
+  status: "pending" | "in_progress" | "completed";
   createdAt: ISO8601;
   updatedAt: ISO8601;
 }
@@ -390,19 +418,30 @@ interface FileRecord {
   fileName: string;
   mimeType: string;
   sizeBytes: number;
-  category: 'upload' | 'output' | 'working';  // working = temp files
-  storagePath: string;           // Server-side path
-  downloadUrl: string;           // User-facing URL
+  category: "upload" | "output" | "working"; // working = temp files
+  storagePath: string; // Server-side path
+  downloadUrl: string; // User-facing URL
   createdAt: ISO8601;
   metadata: {
     originalName?: string;
-    generatedBy?: string;        // Tool or sub-agent that created it
+    generatedBy?: string; // Tool or sub-agent that created it
     artifactType?: ArtifactType;
   };
 }
 
-type ArtifactType = 'html' | 'jsx' | 'markdown' | 'mermaid' | 'svg' | 'pdf'
-                  | 'docx' | 'pptx' | 'xlsx' | 'image' | 'code' | 'other';
+type ArtifactType =
+  | "html"
+  | "jsx"
+  | "markdown"
+  | "mermaid"
+  | "svg"
+  | "pdf"
+  | "docx"
+  | "pptx"
+  | "xlsx"
+  | "image"
+  | "code"
+  | "other";
 ```
 
 ### 4.5 Skill
@@ -411,12 +450,12 @@ type ArtifactType = 'html' | 'jsx' | 'markdown' | 'mermaid' | 'svg' | 'pdf'
 interface Skill {
   id: string;
   name: string;
-  description: string;           // Includes trigger conditions
-  creatorType: 'system' | 'plugin' | 'user';
-  pluginId?: string;             // Parent plugin if from a plugin
+  description: string; // Includes trigger conditions
+  creatorType: "system" | "plugin" | "user";
+  pluginId?: string; // Parent plugin if from a plugin
   enabled: boolean;
-  contentPath: string;           // Path to SKILL.md
-  resourcePaths: string[];       // Paths to bundled resources
+  contentPath: string; // Path to SKILL.md
+  resourcePaths: string[]; // Paths to bundled resources
   updatedAt: ISO8601;
 }
 ```
@@ -430,7 +469,7 @@ interface Plugin {
   version: string;
   description: string;
   author: string;
-  scope: 'user' | 'org';
+  scope: "user" | "org";
   installedAt: ISO8601;
   skills: Skill[];
   commands: SlashCommand[];
@@ -439,9 +478,9 @@ interface Plugin {
 }
 
 interface SlashCommand {
-  name: string;                  // e.g., "review-contract"
+  name: string; // e.g., "review-contract"
   description: string;
-  skillId: string;               // Links to the skill that handles it
+  skillId: string; // Links to the skill that handles it
 }
 ```
 
@@ -450,12 +489,12 @@ interface SlashCommand {
 ```typescript
 interface Connector {
   id: string;
-  name: string;                  // e.g., "Slack", "Notion", "GitHub"
+  name: string; // e.g., "Slack", "Notion", "GitHub"
   description: string;
-  status: 'connected' | 'disconnected' | 'error';
-  authType: 'oauth' | 'api_key' | 'none';
-  tools: ConnectorTool[];        // Tools exposed by this connector
-  config: Record<string, any>;   // Connector-specific configuration
+  status: "connected" | "disconnected" | "error";
+  authType: "oauth" | "api_key" | "none";
+  tools: ConnectorTool[]; // Tools exposed by this connector
+  config: Record<string, any>; // Connector-specific configuration
 }
 
 interface ConnectorTool {
@@ -477,15 +516,15 @@ interface ConnectorTool {
 interface SubAgent {
   id: string;
   parentSessionId: string;
-  description: string;           // 3-5 word summary
-  type: 'bash' | 'general-purpose' | 'explore' | 'plan';
-  status: 'running' | 'completed' | 'failed' | 'cancelled';
+  description: string; // 3-5 word summary
+  type: "bash" | "general-purpose" | "explore" | "plan";
+  status: "running" | "completed" | "failed" | "cancelled";
   prompt: string;
   result?: string;
-  model?: string;                // Can override parent model
+  model?: string; // Can override parent model
   createdAt: ISO8601;
   completedAt?: ISO8601;
-  turns: number;                 // API round-trips used
+  turns: number; // API round-trips used
   maxTurns: number;
 }
 ```
@@ -546,6 +585,7 @@ The system prompt is assembled dynamically per request:
 #### Conversation History Truncation
 
 When context approaches the model's limit:
+
 1. Summarise older messages (keep last 20 full messages, summarise earlier ones).
 2. Drop tool call/result details from old messages (keep just the summary).
 3. Never drop: system prompt, current todos, file references, active sub-agent status.
@@ -570,14 +610,14 @@ When context approaches the model's limit:
 
 #### Behaviour Rules
 
-| Rule | Detail |
-|------|--------|
-| **One in-progress at a time** | Exactly one todo should be `in_progress` at any time while Claude is working. |
-| **Real-time updates** | Status changes stream to the client immediately. The widget re-renders in-place. |
-| **Display text** | `pending` and `completed` items show `content`. `in_progress` items show `activeForm`. |
-| **Auto-create** | Claude creates the todo list at the start of any multi-step task (3+ steps). |
-| **Completion** | Items marked complete only when truly finished. If errors occur, stays in-progress. |
-| **Persistence** | Todos persist with the session. Visible on session resume. |
+| Rule                          | Detail                                                                                 |
+| ----------------------------- | -------------------------------------------------------------------------------------- |
+| **One in-progress at a time** | Exactly one todo should be `in_progress` at any time while Claude is working.          |
+| **Real-time updates**         | Status changes stream to the client immediately. The widget re-renders in-place.       |
+| **Display text**              | `pending` and `completed` items show `content`. `in_progress` items show `activeForm`. |
+| **Auto-create**               | Claude creates the todo list at the start of any multi-step task (3+ steps).           |
+| **Completion**                | Items marked complete only when truly finished. If errors occur, stays in-progress.    |
+| **Persistence**               | Todos persist with the session. Visible on session resume.                             |
 
 #### Progress Bar
 
@@ -629,15 +669,15 @@ Claude generates a file (via tool execution)
 
 #### Supported File Types
 
-| Category | Extensions | Upload | Generate | Preview |
-|----------|-----------|--------|----------|---------|
-| Documents | .docx, .doc, .pdf, .txt, .md, .rtf | ✅ | ✅ | ✅ (pdf via PDF.js, docx/doc convert) |
-| Spreadsheets | .xlsx, .xls, .csv, .tsv | ✅ | ✅ | ✅ (convert to HTML table or PDF) |
-| Presentations | .pptx, .ppt | ✅ | ✅ | ✅ (convert to images) |
-| Images | .png, .jpg, .gif, .svg, .webp | ✅ | ✅ | ✅ (inline) |
-| Code | .js, .jsx, .ts, .tsx, .py, .html, .css | ✅ | ✅ | ✅ (syntax highlight or render) |
-| Data | .json, .xml, .yaml | ✅ | ✅ | ✅ (formatted viewer) |
-| Archives | .zip | ✅ | ✅ | ❌ (download only) |
+| Category      | Extensions                             | Upload | Generate | Preview                               |
+| ------------- | -------------------------------------- | ------ | -------- | ------------------------------------- |
+| Documents     | .docx, .doc, .pdf, .txt, .md, .rtf     | ✅     | ✅       | ✅ (pdf via PDF.js, docx/doc convert) |
+| Spreadsheets  | .xlsx, .xls, .csv, .tsv                | ✅     | ✅       | ✅ (convert to HTML table or PDF)     |
+| Presentations | .pptx, .ppt                            | ✅     | ✅       | ✅ (convert to images)                |
+| Images        | .png, .jpg, .gif, .svg, .webp          | ✅     | ✅       | ✅ (inline)                           |
+| Code          | .js, .jsx, .ts, .tsx, .py, .html, .css | ✅     | ✅       | ✅ (syntax highlight or render)       |
+| Data          | .json, .xml, .yaml                     | ✅     | ✅       | ✅ (formatted viewer)                 |
+| Archives      | .zip                                   | ✅     | ✅       | ❌ (download only)                    |
 
 ### 5.4 Artifact Rendering
 
@@ -666,22 +706,23 @@ Claude creates a file
 
 The JSX renderer needs a sandboxed environment with pre-loaded libraries:
 
-| Library | Version | Import |
-|---------|---------|--------|
-| React | 18.x | `import { useState } from "react"` |
-| Tailwind CSS | 3.x (CDN pre-built) | Utility classes only |
-| lucide-react | 0.263.1 | `import { Camera } from "lucide-react"` |
-| recharts | latest | `import { LineChart } from "recharts"` |
-| d3 | latest | `import * as d3 from "d3"` |
-| Three.js | r128 | `import * as THREE from "three"` |
-| shadcn/ui | latest | `import { Alert } from "@/components/ui/alert"` |
-| Chart.js | latest | `import * as Chart from "chart.js"` |
-| Papaparse | latest | CSV processing |
-| SheetJS | latest | Excel processing |
-| lodash | latest | Utilities |
-| mathjs | latest | Math computations |
+| Library      | Version             | Import                                          |
+| ------------ | ------------------- | ----------------------------------------------- |
+| React        | 18.x                | `import { useState } from "react"`              |
+| Tailwind CSS | 3.x (CDN pre-built) | Utility classes only                            |
+| lucide-react | 0.263.1             | `import { Camera } from "lucide-react"`         |
+| recharts     | latest              | `import { LineChart } from "recharts"`          |
+| d3           | latest              | `import * as d3 from "d3"`                      |
+| Three.js     | r128                | `import * as THREE from "three"`                |
+| shadcn/ui    | latest              | `import { Alert } from "@/components/ui/alert"` |
+| Chart.js     | latest              | `import * as Chart from "chart.js"`             |
+| Papaparse    | latest              | CSV processing                                  |
+| SheetJS      | latest              | Excel processing                                |
+| lodash       | latest              | Utilities                                       |
+| mathjs       | latest              | Math computations                               |
 
 **Important constraints for JSX artifacts:**
+
 - No `localStorage` or `sessionStorage` — use React state only.
 - All state managed via `useState` / `useReducer`.
 - Must have default export with no required props (or provide defaults).
@@ -738,38 +779,40 @@ Each rendered artifact includes a toolbar:
 
 #### Progressive Disclosure (Context Efficiency)
 
-| Level | Size | When Loaded | Content |
-|-------|------|-------------|---------|
-| **Metadata** | ~100 tokens | Always in context | `name` + `description` (trigger text) |
+| Level             | Size         | When Loaded            | Content                                 |
+| ----------------- | ------------ | ---------------------- | --------------------------------------- |
+| **Metadata**      | ~100 tokens  | Always in context      | `name` + `description` (trigger text)   |
 | **SKILL.md body** | ~3000 tokens | On skill trigger match | Full instructions, code patterns, rules |
-| **Resources** | Unlimited | On explicit request | Scripts, templates, reference docs |
+| **Resources**     | Unlimited    | On explicit request    | Scripts, templates, reference docs      |
 
 #### Built-in Skills
 
 The system ships with these core skills:
 
-| Skill | Trigger | Capability |
-|-------|---------|------------|
-| **docx** | Word document, .docx, report, memo, letter | Create/edit/read Word documents using docx-js |
-| **pptx** | Presentation, .pptx, slides, deck | Create/edit/read PowerPoint files using pptxgenjs |
-| **xlsx** | Spreadsheet, .xlsx, Excel, budget, data table | Create/edit/read Excel files with formulas |
-| **pdf** | PDF, .pdf, extract, merge, split, form | Full PDF manipulation pipeline |
-| **web-artifacts-builder** | Complex React artifacts, shadcn | Multi-component web artifact creation |
-| **canvas-design** | Poster, visual design, art | Create PNG/PDF visual designs |
-| **algorithmic-art** | Generative art, p5.js, flow fields | Code-based art with seeded randomness |
-| **theme-factory** | Theme, styling, brand colours | Apply pre-set or custom themes to artifacts |
-| **internal-comms** | Status report, newsletter, FAQ, incident report | Internal communication templates |
-| **slack-gif-creator** | Animated GIF, Slack | GIF creation optimised for Slack |
-| **mcp-builder** | MCP server, integrate API | Guide for building MCP servers |
-| **skill-creator** | Create a skill, new skill | Meta-skill for building custom skills |
+| Skill                     | Trigger                                         | Capability                                        |
+| ------------------------- | ----------------------------------------------- | ------------------------------------------------- |
+| **docx**                  | Word document, .docx, report, memo, letter      | Create/edit/read Word documents using docx-js     |
+| **pptx**                  | Presentation, .pptx, slides, deck               | Create/edit/read PowerPoint files using pptxgenjs |
+| **xlsx**                  | Spreadsheet, .xlsx, Excel, budget, data table   | Create/edit/read Excel files with formulas        |
+| **pdf**                   | PDF, .pdf, extract, merge, split, form          | Full PDF manipulation pipeline                    |
+| **web-artifacts-builder** | Complex React artifacts, shadcn                 | Multi-component web artifact creation             |
+| **canvas-design**         | Poster, visual design, art                      | Create PNG/PDF visual designs                     |
+| **algorithmic-art**       | Generative art, p5.js, flow fields              | Code-based art with seeded randomness             |
+| **theme-factory**         | Theme, styling, brand colours                   | Apply pre-set or custom themes to artifacts       |
+| **internal-comms**        | Status report, newsletter, FAQ, incident report | Internal communication templates                  |
+| **slack-gif-creator**     | Animated GIF, Slack                             | GIF creation optimised for Slack                  |
+| **mcp-builder**           | MCP server, integrate API                       | Guide for building MCP servers                    |
+| **skill-creator**         | Create a skill, new skill                       | Meta-skill for building custom skills             |
 
 #### Custom Skill Creation
 
 Users can create custom skills via:
+
 1. The `skill-creator` meta-skill (guided flow)
 2. Direct file creation following the skill format
 
 Custom skill format:
+
 ```
 my-skill/
 ├── SKILL.md            # Required: YAML frontmatter + markdown instructions
@@ -780,6 +823,7 @@ my-skill/
 ```
 
 SKILL.md format:
+
 ```yaml
 ---
 name: my-custom-skill
@@ -880,21 +924,21 @@ User clicks [Install] on a plugin
 
 #### When to Spawn Sub-Agents
 
-| Trigger | Example |
-|---------|---------|
-| **Parallelisable subtasks** | "Investigate these 5 competitors" → 5 parallel research agents |
-| **Context-heavy subtasks** | "Analyse this 200-page document" → dedicated agent to avoid polluting main context |
-| **Verification** | "Check your work" → spawn verification agent to review outputs |
-| **Exploration** | "Find all files related to X" → exploration agent |
+| Trigger                     | Example                                                                            |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| **Parallelisable subtasks** | "Investigate these 5 competitors" → 5 parallel research agents                     |
+| **Context-heavy subtasks**  | "Analyse this 200-page document" → dedicated agent to avoid polluting main context |
+| **Verification**            | "Check your work" → spawn verification agent to review outputs                     |
+| **Exploration**             | "Find all files related to X" → exploration agent                                  |
 
 #### Sub-Agent Types
 
-| Type | Tools Available | Use Case |
-|------|----------------|----------|
-| **bash** | Bash only | Git operations, command execution |
-| **general-purpose** | All tools | Multi-step research, file operations, web search |
-| **explore** | Read-only tools | Codebase exploration, file search, web fetch |
-| **plan** | Read-only tools | Design implementation plans |
+| Type                | Tools Available | Use Case                                         |
+| ------------------- | --------------- | ------------------------------------------------ |
+| **bash**            | Bash only       | Git operations, command execution                |
+| **general-purpose** | All tools       | Multi-step research, file operations, web search |
+| **explore**         | Read-only tools | Codebase exploration, file search, web fetch     |
+| **plan**            | Read-only tools | Design implementation plans                      |
 
 #### Sub-Agent UI
 
@@ -999,22 +1043,22 @@ Each connector exposes tools to Claude via the MCP (Model Context Protocol):
 
 #### Connector Authentication Flows
 
-| Auth Type | Flow |
-|-----------|------|
-| **OAuth** | Redirect to service → user authorises → server stores tokens → refresh automatically |
-| **API Key** | User enters key in settings → server stores encrypted → uses in requests |
-| **None** | Public APIs, no auth required |
+| Auth Type   | Flow                                                                                 |
+| ----------- | ------------------------------------------------------------------------------------ |
+| **OAuth**   | Redirect to service → user authorises → server stores tokens → refresh automatically |
+| **API Key** | User enters key in settings → server stores encrypted → uses in requests             |
+| **None**    | Public APIs, no auth required                                                        |
 
 #### Connector Permission Model
 
 Each tool call through a connector is classified:
 
-| Annotation | Behaviour |
-|------------|-----------|
-| `readOnly: true` | Execute without asking (data retrieval) |
-| `destructive: true` | Always ask user permission first |
-| `idempotent: true` | Safe to retry on failure |
-| `openWorld: true` | Results may vary between calls |
+| Annotation          | Behaviour                               |
+| ------------------- | --------------------------------------- |
+| `readOnly: true`    | Execute without asking (data retrieval) |
+| `destructive: true` | Always ask user permission first        |
+| `idempotent: true`  | Safe to retry on failure                |
+| `openWorld: true`   | Results may vary between calls          |
 
 ### 5.9 Tool Execution Engine
 
@@ -1022,22 +1066,22 @@ Each tool call through a connector is classified:
 
 #### Built-in Tools
 
-| Tool | Description | Permission Level |
-|------|-------------|-----------------|
-| **Read** | Read file contents | Auto |
-| **Write** | Create new files | Auto |
-| **Edit** | Edit existing files (string replacement) | Auto |
-| **Bash** | Execute shell commands | Auto (with allowlist) |
-| **Glob** | Find files by pattern | Auto |
-| **Grep** | Search file contents | Auto |
-| **WebSearch** | Search the web | Auto |
-| **WebFetch** | Fetch and parse web page | Auto |
-| **TodoWrite** | Update todo list | Auto |
-| **AskUserQuestion** | Ask user multi-choice questions | Auto (blocks for response) |
-| **Task** | Spawn sub-agent | Auto |
-| **Skill** | Invoke a skill | Auto |
-| **EnterPlanMode** | Enter planning mode | Auto (blocks for approval) |
-| **ExitPlanMode** | Present plan for approval | Auto (blocks for approval) |
+| Tool                | Description                              | Permission Level           |
+| ------------------- | ---------------------------------------- | -------------------------- |
+| **Read**            | Read file contents                       | Auto                       |
+| **Write**           | Create new files                         | Auto                       |
+| **Edit**            | Edit existing files (string replacement) | Auto                       |
+| **Bash**            | Execute shell commands                   | Auto (with allowlist)      |
+| **Glob**            | Find files by pattern                    | Auto                       |
+| **Grep**            | Search file contents                     | Auto                       |
+| **WebSearch**       | Search the web                           | Auto                       |
+| **WebFetch**        | Fetch and parse web page                 | Auto                       |
+| **TodoWrite**       | Update todo list                         | Auto                       |
+| **AskUserQuestion** | Ask user multi-choice questions          | Auto (blocks for response) |
+| **Task**            | Spawn sub-agent                          | Auto                       |
+| **Skill**           | Invoke a skill                           | Auto                       |
+| **EnterPlanMode**   | Enter planning mode                      | Auto (blocks for approval) |
+| **ExitPlanMode**    | Present plan for approval                | Auto (blocks for approval) |
 
 #### Tool Execution Flow
 
@@ -1065,14 +1109,14 @@ Claude generates a tool_use content block
 
 Each session gets an isolated execution environment with:
 
-| Feature | Detail |
-|---------|--------|
-| **Working directory** | Persistent per session (`/sessions/{id}/`) |
-| **Timeout** | Default 120s, max 600s per command |
-| **File access** | Read/write to session directory only |
-| **Network** | Outbound HTTP/HTTPS allowed (configurable) |
-| **Packages** | npm, pip available. Common tools pre-installed (git, python, node, etc.) |
-| **Pre-installed tools** | LibreOffice, pandoc, poppler, pytesseract, pdfplumber, openpyxl |
+| Feature                 | Detail                                                                   |
+| ----------------------- | ------------------------------------------------------------------------ |
+| **Working directory**   | Persistent per session (`/sessions/{id}/`)                               |
+| **Timeout**             | Default 120s, max 600s per command                                       |
+| **File access**         | Read/write to session directory only                                     |
+| **Network**             | Outbound HTTP/HTTPS allowed (configurable)                               |
+| **Packages**            | npm, pip available. Common tools pre-installed (git, python, node, etc.) |
+| **Pre-installed tools** | LibreOffice, pandoc, poppler, pytesseract, pdfplumber, openpyxl          |
 
 #### Tool Output Size Management
 
@@ -1138,13 +1182,13 @@ Claude decides task is complex
 ```typescript
 interface Shortcut {
   id: string;
-  name: string;                  // e.g., "Daily Briefing"
+  name: string; // e.g., "Daily Briefing"
   description: string;
-  command: string;               // Slash command trigger: "/daily-briefing"
-  prompt: string;                // The actual instruction sent to Claude
-  schedule?: CronExpression;     // Optional: run automatically
-  pluginId?: string;             // If from a plugin
-  isWorkflow: boolean;           // True if multi-step
+  command: string; // Slash command trigger: "/daily-briefing"
+  prompt: string; // The actual instruction sent to Claude
+  schedule?: CronExpression; // Optional: run automatically
+  pluginId?: string; // If from a plugin
+  isWorkflow: boolean; // True if multi-step
 }
 ```
 
@@ -1371,8 +1415,8 @@ interface AppState {
 
   // Sessions
   sessions: {
-    list: Session[];             // All sessions (summary only)
-    active: Session | null;      // Currently open session (full detail)
+    list: Session[]; // All sessions (summary only)
+    active: Session | null; // Currently open session (full detail)
     loading: boolean;
   };
 
@@ -1380,7 +1424,7 @@ interface AppState {
   chat: {
     messages: Message[];
     isStreaming: boolean;
-    streamBuffer: string;        // Buffered tokens not yet rendered
+    streamBuffer: string; // Buffered tokens not yet rendered
     pendingPermission: PermissionRequest | null;
     pendingQuestion: AskQuestion | null;
     pendingPlan: Plan | null;
@@ -1396,7 +1440,7 @@ interface AppState {
   files: {
     uploads: FileRecord[];
     outputs: FileRecord[];
-    activeArtifact: FileRecord | null;  // Currently previewed artifact
+    activeArtifact: FileRecord | null; // Currently previewed artifact
     uploadProgress: { [fileId: string]: number };
   };
 
@@ -1408,7 +1452,7 @@ interface AppState {
   // Plugins & Skills
   plugins: {
     installed: Plugin[];
-    marketplace: Plugin[];       // Available for install
+    marketplace: Plugin[]; // Available for install
     loading: boolean;
   };
 
@@ -1423,63 +1467,72 @@ interface AppState {
   ui: {
     sidebarOpen: boolean;
     rightPanelOpen: boolean;
-    rightPanelTab: 'artifacts' | 'files';
+    rightPanelTab: "artifacts" | "files";
     commandPaletteOpen: boolean;
     pluginMarketplaceOpen: boolean;
     settingsOpen: boolean;
-    theme: 'light' | 'dark' | 'system';
+    theme: "light" | "dark" | "system";
   };
 }
 ```
 
 ### 7.2 State Update Patterns
 
-| Event | State Changes |
-|-------|--------------|
-| **User sends message** | Append to `chat.messages`, set `chat.isStreaming = true` |
-| **Stream token received** | Append to `chat.streamBuffer`, flush to last message content periodically |
-| **Tool call started** | Append tool_use block to last message |
-| **Tool result received** | Append tool_result block, update related state (files, todos, etc.) |
-| **Todo update** | Replace `todos.items` entirely |
-| **Artifact created** | Add to `files.outputs`, set `files.activeArtifact`, open right panel |
-| **Sub-agent spawned** | Add to `subAgents.active` |
-| **Sub-agent completed** | Update status in `subAgents.active` |
-| **Permission requested** | Set `chat.pendingPermission`, pause stream display |
-| **Permission resolved** | Clear `chat.pendingPermission`, resume stream |
-| **Question asked** | Set `chat.pendingQuestion`, render question card |
-| **Question answered** | Clear `chat.pendingQuestion`, send answer to server |
-| **Plan proposed** | Set `chat.pendingPlan`, render plan review card |
-| **Plan approved/rejected** | Clear `chat.pendingPlan`, continue or restart |
-| **Stream ended** | Set `chat.isStreaming = false`, flush buffer |
+| Event                      | State Changes                                                             |
+| -------------------------- | ------------------------------------------------------------------------- |
+| **User sends message**     | Append to `chat.messages`, set `chat.isStreaming = true`                  |
+| **Stream token received**  | Append to `chat.streamBuffer`, flush to last message content periodically |
+| **Tool call started**      | Append tool_use block to last message                                     |
+| **Tool result received**   | Append tool_result block, update related state (files, todos, etc.)       |
+| **Todo update**            | Replace `todos.items` entirely                                            |
+| **Artifact created**       | Add to `files.outputs`, set `files.activeArtifact`, open right panel      |
+| **Sub-agent spawned**      | Add to `subAgents.active`                                                 |
+| **Sub-agent completed**    | Update status in `subAgents.active`                                       |
+| **Permission requested**   | Set `chat.pendingPermission`, pause stream display                        |
+| **Permission resolved**    | Clear `chat.pendingPermission`, resume stream                             |
+| **Question asked**         | Set `chat.pendingQuestion`, render question card                          |
+| **Question answered**      | Clear `chat.pendingQuestion`, send answer to server                       |
+| **Plan proposed**          | Set `chat.pendingPlan`, render plan review card                           |
+| **Plan approved/rejected** | Clear `chat.pendingPlan`, continue or restart                             |
+| **Stream ended**           | Set `chat.isStreaming = false`, flush buffer                              |
 
 ### 7.3 Real-Time Sync (WebSocket Events)
 
 ```typescript
 // Server → Client events
 type ServerEvent =
-  | { type: 'message_start'; data: { messageId: string; role: string } }
-  | { type: 'content_delta'; data: { type: string; text?: string; [key: string]: any } }
-  | { type: 'tool_use_start'; data: ToolCall }
-  | { type: 'tool_result'; data: ToolResult }
-  | { type: 'todo_update'; data: { todos: TodoItem[] } }
-  | { type: 'artifact_created'; data: FileRecord }
-  | { type: 'sub_agent_update'; data: SubAgent }
-  | { type: 'permission_request'; data: PermissionRequest }
-  | { type: 'ask_question'; data: AskQuestion }
-  | { type: 'plan_proposed'; data: Plan }
-  | { type: 'message_end'; data: { messageId: string; tokenUsage: TokenUsage } }
-  | { type: 'error'; data: { code: string; message: string } }
-  | { type: 'session_status'; data: { status: SessionStatus } };
+  | { type: "message_start"; data: { messageId: string; role: string } }
+  | {
+      type: "content_delta";
+      data: { type: string; text?: string; [key: string]: any };
+    }
+  | { type: "tool_use_start"; data: ToolCall }
+  | { type: "tool_result"; data: ToolResult }
+  | { type: "todo_update"; data: { todos: TodoItem[] } }
+  | { type: "artifact_created"; data: FileRecord }
+  | { type: "sub_agent_update"; data: SubAgent }
+  | { type: "permission_request"; data: PermissionRequest }
+  | { type: "ask_question"; data: AskQuestion }
+  | { type: "plan_proposed"; data: Plan }
+  | { type: "message_end"; data: { messageId: string; tokenUsage: TokenUsage } }
+  | { type: "error"; data: { code: string; message: string } }
+  | { type: "session_status"; data: { status: SessionStatus } };
 
 // Client → Server events
 type ClientEvent =
-  | { type: 'send_message'; data: { content: string; fileIds?: string[] } }
-  | { type: 'resolve_permission'; data: { requestId: string; approved: boolean } }
-  | { type: 'answer_question'; data: { questionId: string; answers: Record<string, string> } }
-  | { type: 'approve_plan'; data: { planId: string } }
-  | { type: 'reject_plan'; data: { planId: string } }
-  | { type: 'cancel_agent'; data: { agentId: string } }
-  | { type: 'stop_generation'; data: {} };
+  | { type: "send_message"; data: { content: string; fileIds?: string[] } }
+  | {
+      type: "resolve_permission";
+      data: { requestId: string; approved: boolean };
+    }
+  | {
+      type: "answer_question";
+      data: { questionId: string; answers: Record<string, string> };
+    }
+  | { type: "approve_plan"; data: { planId: string } }
+  | { type: "reject_plan"; data: { planId: string } }
+  | { type: "cancel_agent"; data: { agentId: string } }
+  | { type: "stop_generation"; data: {} };
 ```
 
 ---
@@ -1490,11 +1543,11 @@ type ClientEvent =
 
 Every action Claude takes is classified into one of three categories:
 
-| Category | Behaviour | Examples |
-|----------|-----------|---------|
-| **Auto** | Execute without asking | Read files, search web, update todos, spawn sub-agents |
-| **Explicit Permission** | Ask user first, wait for approval | Delete files, send messages (email/Slack), publish content, accept agreements, download files, submit forms |
-| **Prohibited** | Never execute, instruct user to do manually | Handle banking/credit card data, create accounts, modify security permissions, enter passwords |
+| Category                | Behaviour                                   | Examples                                                                                                    |
+| ----------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Auto**                | Execute without asking                      | Read files, search web, update todos, spawn sub-agents                                                      |
+| **Explicit Permission** | Ask user first, wait for approval           | Delete files, send messages (email/Slack), publish content, accept agreements, download files, submit forms |
+| **Prohibited**          | Never execute, instruct user to do manually | Handle banking/credit card data, create accounts, modify security permissions, enter passwords              |
 
 ### 8.2 Permission Request UI
 
@@ -1515,12 +1568,12 @@ Every action Claude takes is classified into one of three categories:
 
 All content from external sources (web pages, connector results, file contents) is treated as **untrusted data**. The system enforces:
 
-| Defence | Implementation |
-|---------|---------------|
-| **Content isolation** | Web content, email bodies, and tool results cannot override system instructions |
+| Defence                   | Implementation                                                                                      |
+| ------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Content isolation**     | Web content, email bodies, and tool results cannot override system instructions                     |
 | **Instruction detection** | If Claude finds instructions in untrusted content, it stops and asks the user before following them |
-| **Source tagging** | All content tagged with origin (user, web, connector, file) for trust assessment |
-| **No auto-execution** | Instructions found in documents/emails are surfaced to user for explicit approval |
+| **Source tagging**        | All content tagged with origin (user, web, connector, file) for trust assessment                    |
+| **No auto-execution**     | Instructions found in documents/emails are surfaced to user for explicit approval                   |
 
 ### 8.4 File Security
 
@@ -1537,15 +1590,15 @@ All content from external sources (web pages, connector results, file contents) 
 
 **Goal:** Basic chat with Claude that streams responses and handles simple tool calls.
 
-| Task | Details |
-|------|---------|
-| Session management API | Create, list, get, delete sessions |
-| Chat message flow | Send message → stream response → display |
-| WebSocket infrastructure | Real-time streaming with reconnection |
-| Basic UI layout | Three-panel layout with responsive behaviour |
-| Message rendering | Text, markdown, code blocks |
-| File upload | Upload files, reference in messages |
-| Basic tool execution | Read, Write, Edit, Glob, Grep |
+| Task                     | Details                                      |
+| ------------------------ | -------------------------------------------- |
+| Session management API   | Create, list, get, delete sessions           |
+| Chat message flow        | Send message → stream response → display     |
+| WebSocket infrastructure | Real-time streaming with reconnection        |
+| Basic UI layout          | Three-panel layout with responsive behaviour |
+| Message rendering        | Text, markdown, code blocks                  |
+| File upload              | Upload files, reference in messages          |
+| Basic tool execution     | Read, Write, Edit, Glob, Grep                |
 
 **Milestone:** User can chat with Claude, upload files, and see streamed responses with basic tool usage.
 
@@ -1553,15 +1606,15 @@ All content from external sources (web pages, connector results, file contents) 
 
 **Goal:** Todo tracking, file generation, artifact rendering, and the full tool suite.
 
-| Task | Details |
-|------|---------|
-| Todo system | TodoWrite tool, real-time widget, progress bar |
-| File generation pipeline | Claude creates files, server stores, client shows |
-| Artifact viewer | Render HTML, JSX, markdown, mermaid, SVG, PDF |
-| Bash execution | Isolated command execution with timeout |
-| WebSearch & WebFetch | Web research tools |
-| Permission system | Permission requests, approval flow, action classification |
-| Plan mode | EnterPlanMode, exploration, plan review, ExitPlanMode |
+| Task                     | Details                                                   |
+| ------------------------ | --------------------------------------------------------- |
+| Todo system              | TodoWrite tool, real-time widget, progress bar            |
+| File generation pipeline | Claude creates files, server stores, client shows         |
+| Artifact viewer          | Render HTML, JSX, markdown, mermaid, SVG, PDF             |
+| Bash execution           | Isolated command execution with timeout                   |
+| WebSearch & WebFetch     | Web research tools                                        |
+| Permission system        | Permission requests, approval flow, action classification |
+| Plan mode                | EnterPlanMode, exploration, plan review, ExitPlanMode     |
 
 **Milestone:** User can delegate complex tasks, see real-time progress, and download generated documents.
 
@@ -1569,14 +1622,14 @@ All content from external sources (web pages, connector results, file contents) 
 
 **Goal:** Sub-agents, skills system, and ask-user-question flow.
 
-| Task | Details |
-|------|---------|
-| Sub-agent orchestrator | Spawn, monitor, cancel, aggregate parallel agents |
-| Sub-agent UI | Progress cards, individual status, cancel controls |
-| Skills registry | Metadata loading, trigger matching, progressive disclosure |
-| Built-in skills | docx, pptx, xlsx, pdf, web-artifacts-builder, canvas-design |
-| AskUserQuestion tool | Multi-choice question cards, custom input |
-| Context management | History truncation, skill loading/unloading |
+| Task                   | Details                                                     |
+| ---------------------- | ----------------------------------------------------------- |
+| Sub-agent orchestrator | Spawn, monitor, cancel, aggregate parallel agents           |
+| Sub-agent UI           | Progress cards, individual status, cancel controls          |
+| Skills registry        | Metadata loading, trigger matching, progressive disclosure  |
+| Built-in skills        | docx, pptx, xlsx, pdf, web-artifacts-builder, canvas-design |
+| AskUserQuestion tool   | Multi-choice question cards, custom input                   |
+| Context management     | History truncation, skill loading/unloading                 |
 
 **Milestone:** Claude can break tasks into parallel workstreams, use specialised skills, and ask clarifying questions.
 
@@ -1584,15 +1637,15 @@ All content from external sources (web pages, connector results, file contents) 
 
 **Goal:** Plugin system, connector/MCP integration, and shortcuts.
 
-| Task | Details |
-|------|---------|
-| Plugin registry | Install, uninstall, enable, disable |
-| Plugin marketplace UI | Browse, search, install, upload custom |
-| Connector framework | OAuth flow, API key storage, MCP proxy |
-| Built-in connectors | Slack, Notion, GitHub, Jira (or whatever your priorities are) |
-| Slash commands | Command palette, skill invocation |
-| Shortcuts/workflows | Create, run, schedule automations |
-| Custom skill creation | skill-creator meta-skill, validation |
+| Task                  | Details                                                       |
+| --------------------- | ------------------------------------------------------------- |
+| Plugin registry       | Install, uninstall, enable, disable                           |
+| Plugin marketplace UI | Browse, search, install, upload custom                        |
+| Connector framework   | OAuth flow, API key storage, MCP proxy                        |
+| Built-in connectors   | Slack, Notion, GitHub, Jira (or whatever your priorities are) |
+| Slash commands        | Command palette, skill invocation                             |
+| Shortcuts/workflows   | Create, run, schedule automations                             |
+| Custom skill creation | skill-creator meta-skill, validation                          |
 
 **Milestone:** Users can install plugins, connect external services, and create custom skills and shortcuts.
 
@@ -1600,18 +1653,18 @@ All content from external sources (web pages, connector results, file contents) 
 
 **Goal:** Production readiness, performance, and advanced features.
 
-| Task | Details |
-|------|---------|
-| Session persistence | Resume sessions across page reloads and reconnections |
-| Session history | Search, filter, sort sessions |
-| Error handling | Graceful degradation, retry logic, user-friendly errors |
-| Rate limiting | Token budgets, concurrent session limits |
-| Performance | Lazy loading, virtual scrolling for long chats, debounced renders |
-| Accessibility | Keyboard navigation, screen reader support, ARIA labels |
-| Dark mode | Full theme support |
-| Mobile responsive | Touch-friendly UI, drawer navigation |
-| Analytics | Usage tracking, performance metrics |
-| Testing | E2E tests, integration tests, load tests |
+| Task                | Details                                                           |
+| ------------------- | ----------------------------------------------------------------- |
+| Session persistence | Resume sessions across page reloads and reconnections             |
+| Session history     | Search, filter, sort sessions                                     |
+| Error handling      | Graceful degradation, retry logic, user-friendly errors           |
+| Rate limiting       | Token budgets, concurrent session limits                          |
+| Performance         | Lazy loading, virtual scrolling for long chats, debounced renders |
+| Accessibility       | Keyboard navigation, screen reader support, ARIA labels           |
+| Dark mode           | Full theme support                                                |
+| Mobile responsive   | Touch-friendly UI, drawer navigation                              |
+| Analytics           | Usage tracking, performance metrics                               |
+| Testing             | E2E tests, integration tests, load tests                          |
 
 **Milestone:** Production-ready web application with full feature parity to desktop Cowork.
 
@@ -1704,19 +1757,19 @@ These rules must be enforced in the system prompt and server-side logic:
 
 ## Appendix C: Error Handling Matrix
 
-| Error Type | Client Behaviour | Server Behaviour |
-|------------|-----------------|-----------------|
-| **Claude API timeout** | Show "Claude is taking longer than expected. Retrying..." | Retry with exponential backoff (3 attempts) |
-| **Claude API rate limit** | Show "Rate limit reached. Waiting..." with countdown | Queue and retry after wait period |
-| **Tool execution failure** | Show error in tool result card (collapsible) | Return error to Claude for self-correction |
-| **File upload failure** | Show error toast with retry button | Log error, return 4xx/5xx |
-| **WebSocket disconnect** | Show reconnection indicator, auto-reconnect | Maintain session state for reconnection |
-| **Sub-agent failure** | Show failed status on agent card | Return error to main agent |
-| **Permission timeout** | Show "Permission request expired" after 5 minutes | Cancel pending tool execution |
-| **Session expired** | Prompt to create new session or restore | Clean up resources |
-| **Invalid tool parameters** | Show validation error in tool card | Return validation error to Claude |
-| **File not found** | Show "File no longer available" | Return 404 |
+| Error Type                  | Client Behaviour                                          | Server Behaviour                            |
+| --------------------------- | --------------------------------------------------------- | ------------------------------------------- |
+| **Claude API timeout**      | Show "Claude is taking longer than expected. Retrying..." | Retry with exponential backoff (3 attempts) |
+| **Claude API rate limit**   | Show "Rate limit reached. Waiting..." with countdown      | Queue and retry after wait period           |
+| **Tool execution failure**  | Show error in tool result card (collapsible)              | Return error to Claude for self-correction  |
+| **File upload failure**     | Show error toast with retry button                        | Log error, return 4xx/5xx                   |
+| **WebSocket disconnect**    | Show reconnection indicator, auto-reconnect               | Maintain session state for reconnection     |
+| **Sub-agent failure**       | Show failed status on agent card                          | Return error to main agent                  |
+| **Permission timeout**      | Show "Permission request expired" after 5 minutes         | Cancel pending tool execution               |
+| **Session expired**         | Prompt to create new session or restore                   | Clean up resources                          |
+| **Invalid tool parameters** | Show validation error in tool card                        | Return validation error to Claude           |
+| **File not found**          | Show "File no longer available"                           | Return 404                                  |
 
 ---
 
-*End of specification. Build phase by phase, validate each milestone before proceeding.*
+_End of specification. Build phase by phase, validate each milestone before proceeding._

@@ -111,7 +111,11 @@ export interface SessionWorkflowSeed {
   /** Ordered steps (tool calls + optional Response) from the session. */
   steps: SessionStep[];
   /** Reserved: which step inputs come from prompt vs previous step output. */
-  inputBindings?: Array<{ stepId: string; inputKey: string; source: "prompt" | `step:${string}` }>;
+  inputBindings?: Array<{
+    stepId: string;
+    inputKey: string;
+    source: "prompt" | `step:${string}`;
+  }>;
 }
 
 /** Reserved: workflow runtime context passed between steps as JSON (inputs + outputs). */
@@ -325,7 +329,10 @@ export type ServerEvent =
   | { type: "plan_proposed"; data: { planId: string; steps: PlanStep[] } }
   | {
       type: "message_end";
-      data: { messageId: string; tokenUsage: { input: number; output: number } };
+      data: {
+        messageId: string;
+        tokenUsage: { input: number; output: number };
+      };
     }
   | { type: "error"; data: { code: string; message: string } }
   | { type: "session_status"; data: { status: SessionStatus } };
@@ -373,6 +380,8 @@ export interface CoworkAppState {
     pendingPlan: { planId: string; steps: PlanStep[] } | null;
     /** When set, centre panel sends this message and clears it (e.g. start create-skill flow). */
     starterMessage: string | null;
+    /** messageId -> rating for feedback UI */
+    messageFeedback: Record<string, "positive" | "negative">;
   };
   todos: {
     items: CoworkTodoItem[];

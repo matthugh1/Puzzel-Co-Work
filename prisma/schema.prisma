@@ -29,6 +29,7 @@ model User {
   auditLogs              AuditLog[]
   organizationMemberships OrganizationUser[]
   coworkSessions         CoworkSession[]
+  coworkSkillsCreated    CoworkSkill[]
 
   @@map("users")
 }
@@ -107,6 +108,7 @@ model Organization {
   auditLogs   AuditLog[]
   coworkSessions CoworkSession[]
   coworkSettings CoworkSettings?
+  coworkSkills   CoworkSkill[]
 
   @@index([slug])
   @@index([isActive])
@@ -206,6 +208,9 @@ model CoworkSession {
   todos        CoworkTodoItem[]
   files        CoworkFile[]
   subAgents    CoworkSubAgent[]
+  skills       CoworkSkill[]
+  permissionRequests CoworkPermissionRequest[]
+  messageFeedback CoworkMessageFeedback[]
 
   @@index([userId])
   @@index([organizationId])
@@ -229,11 +234,34 @@ model CoworkMessage {
   metadata  Json?             // tokenUsage, toolCalls, subAgentId
   createdAt DateTime          @default(now())
 
-  session CoworkSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session  CoworkSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  feedback CoworkMessageFeedback[]
 
   @@index([sessionId])
   @@index([createdAt])
   @@map("cowork_messages")
+}
+
+model CoworkMessageFeedback {
+  id             String   @id @default(cuid())
+  messageId      String
+  sessionId      String
+  userId         String
+  organizationId String
+  rating         String   // "positive" | "negative"
+  comment        String?  @db.Text
+  metadata       Json?    // browser info, etc.
+  createdAt      DateTime @default(now())
+
+  message CoworkMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  session CoworkSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([sessionId])
+  @@index([organizationId])
+  @@index([createdAt])
+  @@map("cowork_message_feedback")
 }
 
 enum CoworkMessageRole {
@@ -256,6 +284,31 @@ model CoworkTodoItem {
 
   @@index([sessionId])
   @@map("cowork_todo_items")
+}
+
+enum CoworkPermissionRequestStatus {
+  pending
+  approved
+  denied
+  timeout
+}
+
+model CoworkPermissionRequest {
+  id         String                        @id @default(cuid())
+  sessionId  String
+  requestId  String                        // perm_<toolCallId>_<timestamp>
+  toolName   String
+  toolInput  Json                          // Tool input for display/audit
+  status     CoworkPermissionRequestStatus @default(pending)
+  createdAt  DateTime                      @default(now())
+  resolvedAt DateTime?
+
+  session CoworkSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, requestId])
+  @@index([sessionId])
+  @@index([requestId])
+  @@map("cowork_permission_requests")
 }
 
 enum CoworkTodoStatus {
@@ -338,4 +391,39 @@ enum CoworkSubAgentStatus {
   COMPLETED
   FAILED
   CANCELLED
+}
+
+enum CoworkSkillStatus {
+  draft
+  published
+}
+
+model CoworkSkill {
+  id             String   @id @default(cuid())
+  organizationId String
+  sessionId      String?  // null = org-wide, set = session-scoped
+  name           String
+  description    String   @db.Text
+  category       String   @default("General")
+  triggers       Json     // string[]
+  tags           Json     @default("[]") // string[] for search
+  content        String   @db.Text
+  parameters     Json     @default("[]") // SkillParameter[]
+  exampleInput   String?  @db.Text
+  exampleOutput  String?  @db.Text
+  version        Int      @default(1)
+  status         CoworkSkillStatus @default(draft)
+  createdById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  session      CoworkSession?  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdBy    User?           @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([sessionId])
+  @@index([organizationId, sessionId])
+  @@index([organizationId, category])
+  @@map("cowork_skills")
 }

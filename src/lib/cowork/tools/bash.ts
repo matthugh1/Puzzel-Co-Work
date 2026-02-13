@@ -13,17 +13,19 @@ const MAX_OUTPUT_LENGTH = 30000; // Truncate at 30K chars
 
 export const bashTool: ToolExecutor = {
   name: "Bash",
-  description: "Execute a bash command in the session's working directory. Use this to run scripts, install packages, or perform system operations. Commands run with a timeout and output is truncated for large results.",
+  description:
+    "Execute a bash command in the session's working directory. Use this to run scripts, install packages, or perform system operations. Commands run with a timeout and output is truncated for large results.",
   parameters: {
     type: "object",
     properties: {
-      command: { 
-        type: "string", 
-        description: "Bash command to execute (e.g., 'npm install', 'ls -la', 'python script.py')" 
+      command: {
+        type: "string",
+        description:
+          "Bash command to execute (e.g., 'npm install', 'ls -la', 'python script.py')",
       },
-      timeout: { 
-        type: "number", 
-        description: "Timeout in milliseconds (default 120000, max 600000)" 
+      timeout: {
+        type: "number",
+        description: "Timeout in milliseconds (default 120000, max 600000)",
       },
     },
     required: ["command"],
@@ -105,17 +107,21 @@ export const bashTool: ToolExecutor = {
         clearTimeout(timeoutHandle);
 
         const wasTimeout = killed && signal === "SIGTERM" && code === null;
-        const wasTruncated = stdout.length > MAX_OUTPUT_LENGTH || stderr.length > MAX_OUTPUT_LENGTH;
+        const wasTruncated =
+          stdout.length > MAX_OUTPUT_LENGTH ||
+          stderr.length > MAX_OUTPUT_LENGTH;
 
         // Truncate output if needed
         let finalStdout = stdout;
         let finalStderr = stderr;
         if (finalStdout.length > MAX_OUTPUT_LENGTH) {
-          finalStdout = finalStdout.substring(0, MAX_OUTPUT_LENGTH) + 
+          finalStdout =
+            finalStdout.substring(0, MAX_OUTPUT_LENGTH) +
             `\n\n... (truncated, ${stdout.length - MAX_OUTPUT_LENGTH} more characters)`;
         }
         if (finalStderr.length > MAX_OUTPUT_LENGTH) {
-          finalStderr = finalStderr.substring(0, MAX_OUTPUT_LENGTH) + 
+          finalStderr =
+            finalStderr.substring(0, MAX_OUTPUT_LENGTH) +
             `\n\n... (truncated, ${stderr.length - MAX_OUTPUT_LENGTH} more characters)`;
         }
 
@@ -124,7 +130,8 @@ export const bashTool: ToolExecutor = {
         if (wasTimeout) {
           resultMessage = `Command timed out after ${timeoutMs}ms.\n\n`;
         } else if (wasTruncated) {
-          resultMessage = "Command output was truncated due to size limits.\n\n";
+          resultMessage =
+            "Command output was truncated due to size limits.\n\n";
         }
 
         if (finalStdout) {

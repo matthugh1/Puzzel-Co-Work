@@ -16,14 +16,14 @@ function htmlToText(html: string): string {
   // Remove script and style tags
   let text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
   text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
-  
+
   // Remove HTML tags but preserve line breaks
   text = text.replace(/<br\s*\/?>/gi, "\n");
   text = text.replace(/<\/p>/gi, "\n\n");
   text = text.replace(/<\/div>/gi, "\n");
   text = text.replace(/<\/h[1-6]>/gi, "\n\n");
   text = text.replace(/<[^>]+>/g, "");
-  
+
   // Decode HTML entities (basic)
   text = text
     .replace(/&nbsp;/g, " ")
@@ -32,23 +32,24 @@ function htmlToText(html: string): string {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'");
-  
+
   // Clean up whitespace
   text = text.replace(/\n\s*\n\s*\n/g, "\n\n");
   text = text.trim();
-  
+
   return text;
 }
 
 export const webFetchTool: ToolExecutor = {
   name: "WebFetch",
-  description: "Fetch content from a URL and extract readable text. Useful for reading web pages, documentation, or articles.",
+  description:
+    "Fetch content from a URL and extract readable text. Useful for reading web pages, documentation, or articles.",
   parameters: {
     type: "object",
     properties: {
-      url: { 
-        type: "string", 
-        description: "URL to fetch (must be http:// or https://)" 
+      url: {
+        type: "string",
+        description: "URL to fetch (must be http:// or https://)",
       },
     },
     required: ["url"],
@@ -89,7 +90,8 @@ export const webFetchTool: ToolExecutor = {
         signal: controller.signal,
         headers: {
           "User-Agent": "Mozilla/5.0 (compatible; Cowork/1.0)",
-          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         },
       });
 
@@ -99,12 +101,18 @@ export const webFetchTool: ToolExecutor = {
         return {
           content: `Error: HTTP ${response.status} ${response.statusText}`,
           isError: true,
-          metadata: { status: response.status, statusText: response.statusText },
+          metadata: {
+            status: response.status,
+            statusText: response.statusText,
+          },
         };
       }
 
       const contentType = response.headers.get("content-type") || "";
-      if (!contentType.includes("text/html") && !contentType.includes("text/plain")) {
+      if (
+        !contentType.includes("text/html") &&
+        !contentType.includes("text/plain")
+      ) {
         return {
           content: `Error: Unsupported content type: ${contentType}. Only HTML and plain text are supported.`,
           isError: true,
@@ -113,19 +121,21 @@ export const webFetchTool: ToolExecutor = {
       }
 
       const html = await response.text();
-      
+
       // Extract text from HTML
       const text = htmlToText(html);
-      
+
       // Truncate if needed
-      const truncated = text.length > MAX_CONTENT_LENGTH
-        ? text.substring(0, MAX_CONTENT_LENGTH) + `\n\n... (truncated, ${text.length - MAX_CONTENT_LENGTH} more characters)`
-        : text;
+      const truncated =
+        text.length > MAX_CONTENT_LENGTH
+          ? text.substring(0, MAX_CONTENT_LENGTH) +
+            `\n\n... (truncated, ${text.length - MAX_CONTENT_LENGTH} more characters)`
+          : text;
 
       return {
         content: `Content from ${url}:\n\n${truncated}`,
         isError: false,
-        metadata: { 
+        metadata: {
           url,
           originalLength: text.length,
           truncated: text.length > MAX_CONTENT_LENGTH,

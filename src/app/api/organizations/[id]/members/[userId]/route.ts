@@ -10,9 +10,7 @@ import {
 } from "@/lib/validation";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
-import {
-  isOrganizationAdmin,
-} from "@/lib/organization";
+import { isOrganizationAdmin } from "@/lib/organization";
 
 interface RouteContext {
   params: Promise<{ id: string; userId: string }>;

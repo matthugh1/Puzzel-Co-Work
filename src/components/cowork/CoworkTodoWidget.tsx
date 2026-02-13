@@ -47,7 +47,9 @@ export function CoworkTodoWidget({ items }: CoworkTodoWidgetProps) {
       <div className="cowork-todo-widget__list">
         {items.map((item) => (
           <div key={item.id} className={getClass(item.status)}>
-            <span className="cowork-todo-item__icon">{getIcon(item.status)}</span>
+            <span className="cowork-todo-item__icon">
+              {getIcon(item.status)}
+            </span>
             <span>{item.content}</span>
           </div>
         ))}

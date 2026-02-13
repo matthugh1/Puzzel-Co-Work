@@ -5,7 +5,13 @@
 
 import { registerTool } from "./index";
 import { todoWriteTool } from "./todo-write";
-import { readTool, writeTool, editTool, globTool, grepTool } from "./file-tools";
+import {
+  readTool,
+  writeTool,
+  editTool,
+  globTool,
+  grepTool,
+} from "./file-tools";
 import { bashTool } from "./bash";
 import { webSearchTool } from "./web-search";
 import { webFetchTool } from "./web-fetch";
@@ -16,6 +22,7 @@ import { getSubAgentResultsTool } from "./get-sub-agent-results";
 import { createDocumentTool } from "./create-document";
 import { createSpreadsheetTool } from "./create-spreadsheet";
 import { skillTool } from "./skill";
+import { createSkillTool } from "./create-skill";
 
 // Register all tools
 registerTool(todoWriteTool);
@@ -35,3 +42,4 @@ registerTool(getSubAgentResultsTool);
 registerTool(createDocumentTool);
 registerTool(createSpreadsheetTool);
 registerTool(skillTool);
+registerTool(createSkillTool);

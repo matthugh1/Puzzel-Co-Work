@@ -1,7 +1,10 @@
 /**
  * Permission System
- * Handles permission requests and resolutions for tool execution
+ * DB-backed permission requests for tool execution (survives restarts, multi-instance).
  */
+
+import type { Prisma } from "@prisma/client";
+import { db } from "@/lib/db";
 
 export interface PermissionRequest {
   requestId: string;
@@ -10,93 +13,101 @@ export interface PermissionRequest {
   createdAt: number;
 }
 
-export interface PermissionResolver {
-  requestPermission(request: PermissionRequest): Promise<boolean>;
+const POLL_INTERVAL_MS = 500;
+const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
+function getTimeoutMs(): number {
+  const env = process.env.COWORK_PERMISSION_TIMEOUT_MS;
+  if (env != null) {
+    const n = parseInt(env, 10);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return DEFAULT_TIMEOUT_MS;
 }
 
-// In-memory storage for pending permission requests
-// In production, this would use Redis pub/sub or similar
-const pendingRequests = new Map<string, {
-  resolve: (approved: boolean) => void;
-  reject: (error: Error) => void;
-  request: PermissionRequest;
-}>();
-
 /**
- * Request permission for a tool execution
- * Returns a promise that resolves when the user approves/denies
+ * Request permission for a tool execution.
+ * Creates a DB record and polls until the user approves/denies via the API or timeout.
  */
 export async function requestPermission(
+  sessionId: string,
   requestId: string,
   toolName: string,
   toolInput: Record<string, unknown>,
 ): Promise<boolean> {
-  return new Promise((resolve, reject) => {
-    const request: PermissionRequest = {
+  const timeoutMs = getTimeoutMs();
+
+  await db.coworkPermissionRequest.create({
+    data: {
+      sessionId,
       requestId,
       toolName,
-      toolInput,
-      createdAt: Date.now(),
-    };
+      toolInput: toolInput as Prisma.InputJsonValue,
+      status: "pending",
+    },
+  });
 
-    // Store the resolver
-    pendingRequests.set(requestId, {
-      resolve,
-      reject,
-      request,
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const row = await db.coworkPermissionRequest.findFirst({
+      where: { sessionId, requestId },
+      select: { status: true },
     });
 
-    // Timeout after 5 minutes
-    setTimeout(() => {
-      if (pendingRequests.has(requestId)) {
-        pendingRequests.delete(requestId);
-        reject(new Error("Permission request timed out"));
-      }
-    }, 5 * 60 * 1000);
-  });
-}
-
-/**
- * Resolve a pending permission request
- */
-export function resolvePermission(requestId: string, approved: boolean): boolean {
-  const pending = pendingRequests.get(requestId);
-  if (!pending) {
-    return false; // Request not found or already resolved
-  }
-
-  pendingRequests.delete(requestId);
-  pending.resolve(approved);
-  return true;
-}
-
-/**
- * Get pending request details
- */
-export function getPendingRequest(requestId: string): PermissionRequest | null {
-  const pending = pendingRequests.get(requestId);
-  return pending ? pending.request : null;
-}
-
-/**
- * Clean up old requests (older than 10 minutes)
- */
-export function cleanupOldRequests(): void {
-  const now = Date.now();
-  const maxAge = 10 * 60 * 1000; // 10 minutes
-
-  for (const [requestId, { request }] of pendingRequests.entries()) {
-    if (now - request.createdAt > maxAge) {
-      const pending = pendingRequests.get(requestId);
-      if (pending) {
-        pendingRequests.delete(requestId);
-        pending.reject(new Error("Permission request expired"));
-      }
+    if (!row) {
+      throw new Error("Permission request record not found");
     }
+
+    if (row.status === "approved") return true;
+    if (row.status === "denied" || row.status === "timeout") return false;
+
+    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
   }
+
+  await db.coworkPermissionRequest.updateMany({
+    where: { sessionId, requestId, status: "pending" },
+    data: { status: "timeout", resolvedAt: new Date() },
+  });
+
+  throw new Error("Permission request timed out");
 }
 
-// Clean up old requests every 5 minutes
-if (typeof setInterval !== "undefined") {
-  setInterval(cleanupOldRequests, 5 * 60 * 1000);
+/**
+ * Resolve a pending permission request (called from API route).
+ * Updates the DB record so the polling requestPermission() sees it.
+ */
+export async function resolvePermission(
+  sessionId: string,
+  requestId: string,
+  approved: boolean,
+): Promise<boolean> {
+  const updated = await db.coworkPermissionRequest.updateMany({
+    where: { sessionId, requestId, status: "pending" },
+    data: {
+      status: approved ? "approved" : "denied",
+      resolvedAt: new Date(),
+    },
+  });
+  return updated.count > 0;
+}
+
+/**
+ * Get pending request details by requestId (optional; for backwards compatibility).
+ * Looks up any session with this requestId.
+ */
+export async function getPendingRequest(
+  requestId: string,
+): Promise<PermissionRequest | null> {
+  const row = await db.coworkPermissionRequest.findFirst({
+    where: { requestId, status: "pending" },
+    select: { toolName: true, toolInput: true, createdAt: true },
+  });
+  if (!row) return null;
+  return {
+    requestId,
+    toolName: row.toolName,
+    toolInput: (row.toolInput as Record<string, unknown>) ?? {},
+    createdAt: row.createdAt.getTime(),
+  };
 }

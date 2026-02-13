@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     // Global admin can see all users or filter by org
     if (isAdmin(user)) {
       const where: any = {};
-      
+
       if (organizationId) {
         where.organizationMemberships = {
           some: {
@@ -123,7 +123,7 @@ export async function GET(request: Request) {
 
     // Org admin or regular user - see only their org
     const org = await requireOrganization(request);
-    
+
     // Check permission for org users
     if (!isAdmin(user) && !isOrganizationAdmin(user.id, org.id)) {
       const hasPermission = user.permissions.includes(PERMISSIONS.USERS_READ);
@@ -184,7 +184,10 @@ export async function GET(request: Request) {
         email: u.email,
         name: u.name,
         organizationRole: u.organizationMemberships[0]?.role
-          ? { id: u.organizationMemberships[0].role.id, name: u.organizationMemberships[0].role.name }
+          ? {
+              id: u.organizationMemberships[0].role.id,
+              name: u.organizationMemberships[0].role.name,
+            }
           : null,
         globalRoles: u.roles.map((ur) => ({
           id: ur.role.id,
@@ -243,7 +246,7 @@ export async function POST(request: Request) {
 
     // Determine target organization
     let targetOrgId: string;
-    
+
     if (isAdmin(user)) {
       // Global admin can specify any org
       if (body.organizationId) {

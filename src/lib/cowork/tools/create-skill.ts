@@ -26,7 +26,11 @@ function normalizeInput(input: unknown): Record<string, unknown> {
     const raw = input as Record<string, unknown>;
 
     // Some providers nest params under input.input or input.arguments
-    if (!("name" in raw) && !("content" in raw) && (raw.input || raw.arguments)) {
+    if (
+      !("name" in raw) &&
+      !("content" in raw) &&
+      (raw.input || raw.arguments)
+    ) {
       const nested = (raw.input || raw.arguments) as unknown;
       if (typeof nested === "string") {
         try {
@@ -64,17 +68,58 @@ export const createSkillTool: ToolExecutor = {
     type: "object",
     additionalProperties: false,
     properties: {
-      name: { type: "string", description: "Short name (e.g. 'Contract Notice Periods')" },
-      description: { type: "string", description: "One-line summary of when to use this skill" },
-      category: { type: "string", description: "Category: Writing, Analysis, Code, Research, or General" },
-      triggers: { type: "array", items: { type: "string" }, description: "Phrases that activate the skill" },
-      tags: { type: "array", items: { type: "string" }, description: "Searchable tags" },
-      content: { type: "string", description: "Full system prompt / instructions in markdown (use {{param}} for dynamic inputs)" },
-      parameters: { type: "string", description: "JSON array of parameter objects. Each object: {name, label, type, description, required, default, options}. Set default to null if none. Set options to null unless type is select. Pass \"[]\" if no parameters." },
-      exampleInput: { type: ["string", "null"], description: "Example user input when using this skill, or null" },
-      exampleOutput: { type: ["string", "null"], description: "Example output the skill produces, or null" },
+      name: {
+        type: "string",
+        description: "Short name (e.g. 'Contract Notice Periods')",
+      },
+      description: {
+        type: "string",
+        description: "One-line summary of when to use this skill",
+      },
+      category: {
+        type: "string",
+        description: "Category: Writing, Analysis, Code, Research, or General",
+      },
+      triggers: {
+        type: "array",
+        items: { type: "string" },
+        description: "Phrases that activate the skill",
+      },
+      tags: {
+        type: "array",
+        items: { type: "string" },
+        description: "Searchable tags",
+      },
+      content: {
+        type: "string",
+        description:
+          "Full system prompt / instructions in markdown (use {{param}} for dynamic inputs)",
+      },
+      parameters: {
+        type: "string",
+        description:
+          'JSON array of parameter objects. Each object: {name, label, type, description, required, default, options}. Set default to null if none. Set options to null unless type is select. Pass "[]" if no parameters.',
+      },
+      exampleInput: {
+        type: ["string", "null"],
+        description: "Example user input when using this skill, or null",
+      },
+      exampleOutput: {
+        type: ["string", "null"],
+        description: "Example output the skill produces, or null",
+      },
     },
-    required: ["name", "description", "content", "category", "triggers", "tags", "parameters", "exampleInput", "exampleOutput"],
+    required: [
+      "name",
+      "description",
+      "content",
+      "category",
+      "triggers",
+      "tags",
+      "parameters",
+      "exampleInput",
+      "exampleOutput",
+    ],
   },
   permissionLevel: "auto",
   async execute(input, context) {
@@ -87,25 +132,29 @@ export const createSkillTool: ToolExecutor = {
     );
 
     const name = typeof raw.name === "string" ? raw.name.trim() : "";
-    const description = typeof raw.description === "string" ? raw.description.trim() : "";
+    const description =
+      typeof raw.description === "string" ? raw.description.trim() : "";
     const content = typeof raw.content === "string" ? raw.content.trim() : "";
 
     // Validate required fields
     if (!name) {
       return {
-        content: 'Error: "name" is required. Pass the skill name exactly as shown in your draft.',
+        content:
+          'Error: "name" is required. Pass the skill name exactly as shown in your draft.',
         isError: true,
       };
     }
     if (!description) {
       return {
-        content: 'Error: "description" is required. Pass the skill description exactly as shown in your draft.',
+        content:
+          'Error: "description" is required. Pass the skill description exactly as shown in your draft.',
         isError: true,
       };
     }
     if (!content) {
       return {
-        content: 'Error: "content" is required. Pass the full system prompt / instructions from your draft.',
+        content:
+          'Error: "content" is required. Pass the full system prompt / instructions from your draft.',
         isError: true,
       };
     }
@@ -117,11 +166,15 @@ export const createSkillTool: ToolExecutor = {
         : "General";
 
     const triggers = Array.isArray(raw.triggers)
-      ? (raw.triggers as string[]).filter((t) => typeof t === "string" && t.trim()).slice(0, 20)
+      ? (raw.triggers as string[])
+          .filter((t) => typeof t === "string" && t.trim())
+          .slice(0, 20)
       : [];
 
     const tags = Array.isArray(raw.tags)
-      ? (raw.tags as string[]).filter((t) => typeof t === "string" && t.trim()).slice(0, 50)
+      ? (raw.tags as string[])
+          .filter((t) => typeof t === "string" && t.trim())
+          .slice(0, 50)
       : [];
 
     // Parameters come as a JSON string (to avoid nested object schema issues with OpenAI strict mode)
@@ -150,23 +203,30 @@ export const createSkillTool: ToolExecutor = {
       .map((p) => ({
         name: String(p.name).trim(),
         label: String(p.label).trim(),
-        type: ["text", "textarea", "select", "number", "boolean"].includes(String(p.type))
+        type: ["text", "textarea", "select", "number", "boolean"].includes(
+          String(p.type),
+        )
           ? p.type
           : "text",
-        description: typeof p.description === "string" ? p.description.trim() : "",
+        description:
+          typeof p.description === "string" ? p.description.trim() : "",
         required: Boolean(p.required),
         default: typeof p.default === "string" ? p.default : undefined,
         options: Array.isArray(p.options)
-          ? (p.options as unknown[]).filter((o) => typeof o === "string").slice(0, 50)
+          ? (p.options as unknown[])
+              .filter((o) => typeof o === "string")
+              .slice(0, 50)
           : undefined,
       }));
 
-    const exampleInput = typeof raw.exampleInput === "string" && raw.exampleInput.trim()
-      ? raw.exampleInput.trim().slice(0, 2000)
-      : null;
-    const exampleOutput = typeof raw.exampleOutput === "string" && raw.exampleOutput.trim()
-      ? raw.exampleOutput.trim().slice(0, 2000)
-      : null;
+    const exampleInput =
+      typeof raw.exampleInput === "string" && raw.exampleInput.trim()
+        ? raw.exampleInput.trim().slice(0, 2000)
+        : null;
+    const exampleOutput =
+      typeof raw.exampleOutput === "string" && raw.exampleOutput.trim()
+        ? raw.exampleOutput.trim().slice(0, 2000)
+        : null;
 
     const status = raw.status === "draft" ? "draft" : "published";
 

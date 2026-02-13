@@ -8,13 +8,15 @@ import type { ToolExecutor } from "./types";
 
 export const taskTool: ToolExecutor = {
   name: "Task",
-  description: "Spawn a sub-agent to handle a parallel task. Use this when you need to break work into independent workstreams that can run concurrently. Each sub-agent has its own conversation context and can use tools independently.",
+  description:
+    "Spawn a sub-agent to handle a parallel task. Use this when you need to break work into independent workstreams that can run concurrently. Each sub-agent has its own conversation context and can use tools independently.",
   parameters: {
     type: "object",
     properties: {
       description: {
         type: "string",
-        description: "Brief description of what this sub-agent will do (e.g., 'Research competitor A')",
+        description:
+          "Brief description of what this sub-agent will do (e.g., 'Research competitor A')",
       },
       prompt: {
         type: "string",
@@ -23,12 +25,14 @@ export const taskTool: ToolExecutor = {
       subagent_type: {
         type: "string",
         enum: ["bash", "general-purpose", "explore", "plan"],
-        description: "Type of sub-agent: 'bash' (Bash only), 'general-purpose' (all tools), 'explore' (read-only), 'plan' (read-only, planning)",
+        description:
+          "Type of sub-agent: 'bash' (Bash only), 'general-purpose' (all tools), 'explore' (read-only), 'plan' (read-only, planning)",
         default: "general-purpose",
       },
       model: {
         type: "string",
-        description: "Optional model override for this sub-agent (defaults to parent session model)",
+        description:
+          "Optional model override for this sub-agent (defaults to parent session model)",
       },
       maxTurns: {
         type: "number",

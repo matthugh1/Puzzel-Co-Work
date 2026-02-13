@@ -52,8 +52,12 @@ export function CapabilitiesPanel({ isOpen, onClose }: CapabilitiesPanelProps) {
   const filtered = query.trim()
     ? CATEGORIES.map((cat) => ({
         ...cat,
-        tools: cat.tools.filter((t) => t.toLowerCase().includes(query.toLowerCase())),
-        examples: cat.examples.filter((e) => e.toLowerCase().includes(query.toLowerCase())),
+        tools: cat.tools.filter((t) =>
+          t.toLowerCase().includes(query.toLowerCase()),
+        ),
+        examples: cat.examples.filter((e) =>
+          e.toLowerCase().includes(query.toLowerCase()),
+        ),
       })).filter((cat) => cat.tools.length > 0 || cat.examples.length > 0)
     : CATEGORIES;
 
@@ -98,7 +102,9 @@ export function CapabilitiesPanel({ isOpen, onClose }: CapabilitiesPanelProps) {
             flexShrink: 0,
           }}
         >
-          <h2 style={{ fontSize: "1.125rem", fontWeight: 600, margin: 0 }}>What I can do</h2>
+          <h2 style={{ fontSize: "1.125rem", fontWeight: 600, margin: 0 }}>
+            What I can do
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -109,7 +115,12 @@ export function CapabilitiesPanel({ isOpen, onClose }: CapabilitiesPanelProps) {
             ✕
           </button>
         </header>
-        <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--color-border)" }}>
+        <div
+          style={{
+            padding: "12px 20px",
+            borderBottom: "1px solid var(--color-border)",
+          }}
+        >
           <input
             type="search"
             placeholder="Search capabilities..."
@@ -136,19 +147,40 @@ export function CapabilitiesPanel({ isOpen, onClose }: CapabilitiesPanelProps) {
                 borderRadius: "var(--radius-md)",
               }}
             >
-              <div style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 8 }}>
+              <div
+                style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 8 }}
+              >
                 <span style={{ marginRight: 8 }}>{cat.icon}</span>
                 {cat.title}
               </div>
-              <div style={{ fontSize: "0.8125rem", color: "var(--color-text-muted)", marginBottom: 8 }}>
+              <div
+                style={{
+                  fontSize: "0.8125rem",
+                  color: "var(--color-text-muted)",
+                  marginBottom: 8,
+                }}
+              >
                 {cat.tools.join(", ")}
               </div>
               {cat.permission && (
-                <div style={{ fontSize: "0.75rem", color: "var(--color-warning-text)", marginBottom: 4 }}>
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--color-warning-text)",
+                    marginBottom: 4,
+                  }}
+                >
                   {cat.permission}
                 </div>
               )}
-              <ul style={{ margin: 0, paddingLeft: 20, fontSize: "0.8125rem", color: "var(--color-text-secondary)" }}>
+              <ul
+                style={{
+                  margin: 0,
+                  paddingLeft: 20,
+                  fontSize: "0.8125rem",
+                  color: "var(--color-text-secondary)",
+                }}
+              >
                 {cat.examples.slice(0, 3).map((ex) => (
                   <li key={ex}>{ex}</li>
                 ))}

@@ -54,7 +54,9 @@ export default function NewOrganizationPage() {
       // Redirect to organization detail page
       router.push(`/admin/organizations/${data.organization.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create organization");
+      setError(
+        err instanceof Error ? err.message : "Failed to create organization",
+      );
       setLoading(false);
     }
   };

@@ -63,12 +63,29 @@ export const validationSchemas = {
   // Organization management
   createOrganization: z.object({
     name: z.string().min(1).max(255).trim(),
-    slug: z.string().min(1).max(100).trim().regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
+    slug: z
+      .string()
+      .min(1)
+      .max(100)
+      .trim()
+      .regex(
+        /^[a-z0-9-]+$/,
+        "Slug must contain only lowercase letters, numbers, and hyphens",
+      ),
   }),
 
   updateOrganization: z.object({
     name: z.string().min(1).max(255).trim().optional(),
-    slug: z.string().min(1).max(100).trim().regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens").optional(),
+    slug: z
+      .string()
+      .min(1)
+      .max(100)
+      .trim()
+      .regex(
+        /^[a-z0-9-]+$/,
+        "Slug must contain only lowercase letters, numbers, and hyphens",
+      )
+      .optional(),
     isActive: z.boolean().optional(),
   }),
 
@@ -89,14 +106,18 @@ export const validationSchemas = {
 
   // Cowork session management
   createCoworkSession: z.object({
-    model: z.enum(["claude-sonnet-4-5", "claude-opus-4-5", "claude-haiku-4-5"]).default("claude-sonnet-4-5"),
+    model: z
+      .enum(["claude-sonnet-4-5", "claude-opus-4-5", "claude-haiku-4-5"])
+      .default("claude-sonnet-4-5"),
     title: z.string().min(1).max(255).trim().optional(),
   }),
 
   updateCoworkSession: z.object({
     title: z.string().min(1).max(255).trim().optional(),
     status: z.enum(["active", "paused", "completed", "error"]).optional(),
-    model: z.enum(["claude-sonnet-4-5", "claude-opus-4-5", "claude-haiku-4-5"]).optional(),
+    model: z
+      .enum(["claude-sonnet-4-5", "claude-opus-4-5", "claude-haiku-4-5"])
+      .optional(),
   }),
 
   // Cowork message
@@ -105,6 +126,7 @@ export const validationSchemas = {
     fileIds: z.array(z.string()).optional(),
     provider: z.enum(["anthropic", "openai"]).optional(),
     model: z.string().min(1).max(100).optional(),
+    skillHint: z.string().min(1).max(120).trim().optional(),
   }),
 
   // Skill parameter (for create/update)
@@ -174,12 +196,20 @@ export const validationSchemas = {
 
   // Cowork todo update
   updateCoworkTodos: z.object({
-    todos: z.array(z.object({
-      id: z.string(),
-      content: z.string().min(1).max(500),
-      activeForm: z.string().min(1).max(500),
-      status: z.enum(["pending", "in_progress", "completed"]),
-    })),
+    todos: z.array(
+      z.object({
+        id: z.string(),
+        content: z.string().min(1).max(500),
+        activeForm: z.string().min(1).max(500),
+        status: z.enum(["pending", "in_progress", "completed"]),
+      }),
+    ),
+  }),
+
+  // Cowork message feedback
+  coworkMessageFeedback: z.object({
+    rating: z.enum(["positive", "negative"]),
+    comment: z.string().max(1000).trim().optional(),
   }),
 };
 
@@ -208,7 +238,7 @@ export async function validateRequestBody<T>(
 
   if (!result.success) {
     const errors: Record<string, string[]> = {};
-    
+
     // Handle Zod validation errors - Zod uses 'issues' property
     if (result.error && "issues" in result.error) {
       const zodError = result.error as z.ZodError;
@@ -223,7 +253,7 @@ export async function validateRequestBody<T>(
       // Fallback if error structure is unexpected
       errors["_general"] = ["Validation failed"];
     }
-    
+
     throw new ValidationError(errors);
   }
 

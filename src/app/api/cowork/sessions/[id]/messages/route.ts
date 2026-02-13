@@ -61,10 +61,7 @@ export async function GET(request: Request, context: RouteContext) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     const url = new URL(request.url);
@@ -154,10 +151,7 @@ export async function POST(request: Request, context: RouteContext) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     if (!body.content || body.content.length === 0) {
@@ -233,20 +227,36 @@ export async function POST(request: Request, context: RouteContext) {
 
     // Convert messages to simple format (agent loop will handle tool_use/tool_result)
     const chatMessages = history.map((m) => {
-      const content = m.content as unknown as Array<{ type: string; text?: string }>;
+      const content = m.content as unknown as Array<{
+        type: string;
+        text?: string;
+      }>;
       const text =
         content
           .filter((c) => c.type === "text")
           .map((c) => c.text || "")
           .join("\n") || "";
       return {
-        role: m.role === "USER" ? "user" as const : "assistant" as const,
+        role: m.role === "USER" ? ("user" as const) : ("assistant" as const),
         content: text,
       };
     });
 
+    // Slash command: when user typed /skill-name, append instruction so LLM calls Skill tool first
+    const skillHint = body.skillHint as string | undefined;
+    if (skillHint && chatMessages.length > 0) {
+      const last = chatMessages[chatMessages.length - 1];
+      if (last && last.role === "user" && typeof last.content === "string") {
+        last.content =
+          last.content +
+          `\n\n[You were invoked via /${skillHint}. Call the Skill tool with skillName: "${skillHint}" first, then proceed with the request above.]`;
+      }
+    }
+
     // Helper to determine MIME type and artifact type from file extension
-    const getFileInfo = (fileName: string): { mimeType: string; artifactType?: string } => {
+    const getFileInfo = (
+      fileName: string,
+    ): { mimeType: string; artifactType?: string } => {
       const ext = path.extname(fileName).toLowerCase();
       const mimeTypes: Record<string, string> = {
         ".html": "text/html",
@@ -268,7 +278,7 @@ export async function POST(request: Request, context: RouteContext) {
         ".css": "text/css",
         ".xml": "application/xml",
       };
-      
+
       const artifactTypes: Record<string, string> = {
         ".html": "html",
         ".htm": "html",
@@ -295,7 +305,7 @@ export async function POST(request: Request, context: RouteContext) {
         ".rb": "code",
         ".php": "code",
       };
-      
+
       return {
         mimeType: mimeTypes[ext] || "application/octet-stream",
         artifactType: artifactTypes[ext],
@@ -303,7 +313,12 @@ export async function POST(request: Request, context: RouteContext) {
     };
 
     // Artifact creation callback (content optional for binary files already on disk, e.g. CreateDocument)
-    const createArtifact: ArtifactCreator = async (filePath, fileName, content, sessionId) => {
+    const createArtifact: ArtifactCreator = async (
+      filePath,
+      fileName,
+      content,
+      sessionId,
+    ) => {
       const { mimeType, artifactType } = getFileInfo(fileName);
       const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
       const downloadUrl = `/api/cowork/sessions/${sessionId}/files/${encodeURIComponent(safeFileName)}`;
@@ -369,11 +384,30 @@ export async function POST(request: Request, context: RouteContext) {
       },
       orderBy: { createdAt: "desc" },
     });
-    const subAgents: Array<{ id: string; description: string; status: string }> = subAgentsRaw.map((a) => ({
+    const subAgents: Array<{
+      id: string;
+      description: string;
+      status: string;
+    }> = subAgentsRaw.map((a) => ({
       id: a.id,
       description: a.description,
       status: a.status.toLowerCase(),
     }));
+
+    // Load session feedback for agent awareness (negative = user flagged issues)
+    let sessionFeedback: Array<{ rating: string }> = [];
+    try {
+      const sessionFeedbackRows = await db.coworkMessageFeedback.findMany({
+        where: { sessionId: id },
+        select: { rating: true },
+      });
+      sessionFeedback = sessionFeedbackRows.map((f) => ({ rating: f.rating }));
+    } catch (feedbackErr) {
+      console.warn(
+        "[Messages Route] Could not load session feedback (table may not exist yet):",
+        feedbackErr,
+      );
+    }
 
     // 14. Create the SSE stream with agent loop
     let agentStream: ReadableStream<Uint8Array>;
@@ -383,7 +417,8 @@ export async function POST(request: Request, context: RouteContext) {
         model,
         temperature: settings?.temperature ?? 0.7,
         maxTokens: settings?.maxTokens ?? 4096,
-        systemPrompt: settings?.systemPrompt || session.systemPrompt || undefined,
+        systemPrompt:
+          settings?.systemPrompt || session.systemPrompt || undefined,
         sessionId: id,
         userId: user.id,
         organizationId: org.id,
@@ -401,10 +436,14 @@ export async function POST(request: Request, context: RouteContext) {
             category: f.category.toLowerCase(),
           })),
           subAgents,
+          sessionFeedback,
         },
       });
     } catch (streamError) {
-      console.error("[Messages Route] Error creating agent stream:", streamError);
+      console.error(
+        "[Messages Route] Error creating agent stream:",
+        streamError,
+      );
       throw streamError;
     }
 
@@ -415,9 +454,15 @@ export async function POST(request: Request, context: RouteContext) {
     const outputStream = new ReadableStream<Uint8Array>({
       async start(controller) {
         let fullText = "";
-        const contentBlocks: Array<{ type: string; [key: string]: unknown }> = [];
+        const contentBlocks: Array<{ type: string; [key: string]: unknown }> =
+          [];
         let todoUpdate: unknown = null;
-        const artifacts: Array<{ type: string; artifactId: string; fileName: string; renderType?: string }> = [];
+        const artifacts: Array<{
+          type: string;
+          artifactId: string;
+          fileName: string;
+          renderType?: string;
+        }> = [];
 
         try {
           while (true) {
@@ -434,7 +479,7 @@ export async function POST(request: Request, context: RouteContext) {
               if (line.startsWith("data: ") && line !== "data: [DONE]") {
                 try {
                   const parsed = JSON.parse(line.slice(6));
-                  
+
                   if (parsed.type === "content_delta" && parsed.text) {
                     fullText += parsed.text;
                   } else if (parsed.type === "tool_use_start") {
@@ -447,9 +492,11 @@ export async function POST(request: Request, context: RouteContext) {
                   } else if (parsed.type === "tool_result") {
                     contentBlocks.push({
                       type: "tool_result",
-                      tool_use_id: parsed.tool_use_id || parsed.data?.tool_use_id,
+                      tool_use_id:
+                        parsed.tool_use_id || parsed.data?.tool_use_id,
                       content: parsed.content || parsed.data?.content || "",
-                      is_error: parsed.is_error || parsed.data?.is_error || false,
+                      is_error:
+                        parsed.is_error || parsed.data?.is_error || false,
                     });
                   } else if (parsed.type === "todo_update") {
                     todoUpdate = parsed.todos || parsed.data?.todos;
@@ -470,7 +517,8 @@ export async function POST(request: Request, context: RouteContext) {
           }
 
           // Build final message content
-          const finalContent: Array<{ type: string; [key: string]: unknown }> = [];
+          const finalContent: Array<{ type: string; [key: string]: unknown }> =
+            [];
           if (fullText) {
             finalContent.push({ type: "text", text: fullText });
           }
@@ -484,7 +532,7 @@ export async function POST(request: Request, context: RouteContext) {
 
           // Save assistant message to DB after streaming
           if (finalContent.length > 0) {
-            await db.coworkMessage.create({
+            const created = await db.coworkMessage.create({
               data: {
                 sessionId: id,
                 role: "ASSISTANT",
@@ -496,6 +544,13 @@ export async function POST(request: Request, context: RouteContext) {
               },
             });
 
+            // Notify client of persisted message id so feedback and history use the real DB id
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({ type: "message_persisted", messageId: created.id })}\n\n`,
+              ),
+            );
+
             // Update session model if it was overridden
             if (model !== session.model) {
               await db.coworkSession.update({
@@ -506,7 +561,9 @@ export async function POST(request: Request, context: RouteContext) {
 
             // If EnterPlanMode was used, persist plan mode on session
             const usedEnterPlanMode = contentBlocks.some(
-              (b) => (b as { type?: string; name?: string }).type === "tool_use" && (b as { name?: string }).name === "EnterPlanMode"
+              (b) =>
+                (b as { type?: string; name?: string }).type === "tool_use" &&
+                (b as { name?: string }).name === "EnterPlanMode",
             );
             if (usedEnterPlanMode) {
               await db.coworkSession.update({

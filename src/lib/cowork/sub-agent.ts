@@ -44,7 +44,11 @@ export async function spawnSubAgent(config: SubAgentConfig): Promise<string> {
     data: {
       sessionId: config.sessionId,
       description: config.description,
-      type: config.type.toUpperCase().replace("-", "_") as "BASH" | "GENERAL_PURPOSE" | "EXPLORE" | "PLAN",
+      type: config.type.toUpperCase().replace("-", "_") as
+        | "BASH"
+        | "GENERAL_PURPOSE"
+        | "EXPLORE"
+        | "PLAN",
       status: "RUNNING",
       prompt: config.prompt,
       model: config.model,
@@ -80,11 +84,17 @@ export async function spawnSubAgent(config: SubAgentConfig): Promise<string> {
           where: { id: agentId },
           data: { turns: { increment: 1 } },
         })
-        .catch((err) => console.error("[Sub-Agent] Error updating turns:", err));
+        .catch((err) =>
+          console.error("[Sub-Agent] Error updating turns:", err),
+        );
     }
 
     // Only emit to parent stream if still open and on important events
-    if (parentStreamOpen && config.parentSendEvent && eventType === "message_end") {
+    if (
+      parentStreamOpen &&
+      config.parentSendEvent &&
+      eventType === "message_end"
+    ) {
       try {
         config.parentSendEvent("sub_agent_update", {
           id: agentId,
@@ -95,7 +105,9 @@ export async function spawnSubAgent(config: SubAgentConfig): Promise<string> {
       } catch (error) {
         // Parent stream closed - mark it and stop trying
         parentStreamOpen = false;
-        console.log(`[Sub-Agent ${agentId}] Parent stream closed, continuing in background`);
+        console.log(
+          `[Sub-Agent ${agentId}] Parent stream closed, continuing in background`,
+        );
       }
     }
   };
@@ -130,28 +142,39 @@ export async function spawnSubAgent(config: SubAgentConfig): Promise<string> {
       let fullText = "";
       let turnCount = 0;
 
-      const result = await runAgentLoop(initialMessages, agentConfig, (eventType, data) => {
-        // Track turns from message_end events
-        if (eventType === "message_end") {
-          turnCount++;
-          
-          // Update DB with turn count
-          db.coworkSubAgent
-            .update({
-              where: { id: agentId },
-              data: { turns: turnCount },
-            })
-            .catch((err) => console.error("[Sub-Agent] Error updating turns:", err));
-        }
+      const result = await runAgentLoop(
+        initialMessages,
+        agentConfig,
+        (eventType, data) => {
+          // Track turns from message_end events
+          if (eventType === "message_end") {
+            turnCount++;
 
-        // Forward to parent sendEvent
-        sendEvent(eventType, data);
+            // Update DB with turn count
+            db.coworkSubAgent
+              .update({
+                where: { id: agentId },
+                data: { turns: turnCount },
+              })
+              .catch((err) =>
+                console.error("[Sub-Agent] Error updating turns:", err),
+              );
+          }
 
-        // Accumulate text from content_delta events
-        if (eventType === "content_delta" && typeof data === "object" && data !== null && "text" in data) {
-          fullText += String(data.text);
-        }
-      });
+          // Forward to parent sendEvent
+          sendEvent(eventType, data);
+
+          // Accumulate text from content_delta events
+          if (
+            eventType === "content_delta" &&
+            typeof data === "object" &&
+            data !== null &&
+            "text" in data
+          ) {
+            fullText += String(data.text);
+          }
+        },
+      );
 
       // Add final text from result
       fullText += result.fullText;
@@ -178,12 +201,15 @@ export async function spawnSubAgent(config: SubAgentConfig): Promise<string> {
             turns: turnCount,
           });
         } catch (error) {
-          console.log(`[Sub-Agent ${agentId}] Parent stream closed on completion`);
+          console.log(
+            `[Sub-Agent ${agentId}] Parent stream closed on completion`,
+          );
         }
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
       // Update DB with error
       await db.coworkSubAgent.update({
         where: { id: agentId },

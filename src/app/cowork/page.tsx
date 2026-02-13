@@ -10,7 +10,11 @@ import { CreateSkillModal } from "@/components/cowork/CreateSkillModal";
 import type { CoworkSession } from "@/types/cowork";
 import { getSessionStepsFromMessages } from "@/lib/cowork/session-steps";
 
-export type SessionError = "unauthorized" | "forbidden" | "create_failed" | null;
+export type SessionError =
+  | "unauthorized"
+  | "forbidden"
+  | "create_failed"
+  | null;
 
 export default function CoworkPage() {
   const { state } = useCowork();
@@ -31,7 +35,7 @@ export default function CoworkPage() {
 
   const sessionSteps = useMemo(
     () => getSessionStepsFromMessages(state.chat.messages),
-    [state.chat.messages]
+    [state.chat.messages],
   );
 
   // Load sessions and settings on mount
@@ -68,7 +72,9 @@ export default function CoworkPage() {
         const data = await res.json();
         if (data.settings) {
           actions.setSettings({
-            defaultProvider: data.settings.defaultProvider as "anthropic" | "openai",
+            defaultProvider: data.settings.defaultProvider as
+              | "anthropic"
+              | "openai",
             defaultModel: data.settings.defaultModel,
           });
         }
@@ -104,6 +110,7 @@ export default function CoworkPage() {
         actions.setOutputs([]);
         actions.setSubAgents([]);
         actions.setActiveArtifact(null);
+        actions.setMessageFeedbackMap({});
       } else if (res.status === 401) {
         setSessionError("unauthorized");
       } else if (res.status === 403) {
@@ -134,44 +141,74 @@ export default function CoworkPage() {
         if (filesRes.ok) {
           const filesData = await filesRes.json();
           const files = filesData.files || [];
-          actions.setUploads(files.filter((f: { category: string }) => f.category === "upload"));
-          actions.setOutputs(files.filter((f: { category: string }) => f.category === "output"));
+          actions.setUploads(
+            files.filter((f: { category: string }) => f.category === "upload"),
+          );
+          actions.setOutputs(
+            files.filter((f: { category: string }) => f.category === "output"),
+          );
         } else {
           actions.setUploads([]);
           actions.setOutputs([]);
         }
 
+        // Load session feedback (for message thumbs state)
+        const feedbackRes = await fetch(
+          `/api/cowork/sessions/${sessionId}/feedback`,
+        );
+        if (feedbackRes.ok) {
+          const feedbackData = await feedbackRes.json();
+          const feedbackList = feedbackData.feedback || [];
+          const feedbackMap: Record<string, "positive" | "negative"> = {};
+          for (const f of feedbackList) {
+            feedbackMap[f.messageId] = f.rating;
+          }
+          actions.setMessageFeedbackMap(feedbackMap);
+        } else {
+          actions.setMessageFeedbackMap({});
+        }
+
         // Load sub-agents for this session
-        const agentsRes = await fetch(`/api/cowork/sessions/${sessionId}/agents`);
+        const agentsRes = await fetch(
+          `/api/cowork/sessions/${sessionId}/agents`,
+        );
         if (agentsRes.ok) {
           const agentsData = await agentsRes.json();
           const agents = agentsData.agents || [];
-          actions.setSubAgents(agents.map((a: {
-            id: string;
-            description: string;
-            type: string;
-            status: string;
-            prompt: string;
-            result?: string;
-            model?: string;
-            turns: number;
-            maxTurns: number;
-            createdAt: string;
-            completedAt?: string;
-          }) => ({
-            id: a.id,
-            parentSessionId: sessionId,
-            description: a.description,
-            type: a.type as "bash" | "general-purpose" | "explore" | "plan",
-            status: a.status as "running" | "completed" | "failed" | "cancelled",
-            prompt: a.prompt,
-            result: a.result,
-            model: a.model,
-            createdAt: a.createdAt,
-            completedAt: a.completedAt,
-            turns: a.turns,
-            maxTurns: a.maxTurns,
-          })));
+          actions.setSubAgents(
+            agents.map(
+              (a: {
+                id: string;
+                description: string;
+                type: string;
+                status: string;
+                prompt: string;
+                result?: string;
+                model?: string;
+                turns: number;
+                maxTurns: number;
+                createdAt: string;
+                completedAt?: string;
+              }) => ({
+                id: a.id,
+                parentSessionId: sessionId,
+                description: a.description,
+                type: a.type as "bash" | "general-purpose" | "explore" | "plan",
+                status: a.status as
+                  | "running"
+                  | "completed"
+                  | "failed"
+                  | "cancelled",
+                prompt: a.prompt,
+                result: a.result,
+                model: a.model,
+                createdAt: a.createdAt,
+                completedAt: a.completedAt,
+                turns: a.turns,
+                maxTurns: a.maxTurns,
+              }),
+            ),
+          );
         } else {
           actions.setSubAgents([]);
         }
@@ -203,6 +240,7 @@ export default function CoworkPage() {
             actions.setOutputs([]);
             actions.setActiveArtifact(null);
             actions.setSubAgents([]);
+            actions.setMessageFeedbackMap({});
           }
         }
       } catch {
@@ -213,7 +251,10 @@ export default function CoworkPage() {
   );
 
   return (
-    <div className="cowork-layout" style={sessionError ? { paddingTop: 52 } : undefined}>
+    <div
+      className="cowork-layout"
+      style={sessionError ? { paddingTop: 52 } : undefined}
+    >
       {sessionError && (
         <div
           className="cowork-session-error"
@@ -225,7 +266,10 @@ export default function CoworkPage() {
             right: 0,
             zIndex: 100,
             padding: "12px 20px",
-            background: sessionError === "unauthorized" ? "var(--cw-danger-subtle, rgba(239,68,68,0.1))" : "var(--color-surface-secondary)",
+            background:
+              sessionError === "unauthorized"
+                ? "var(--cw-danger-subtle, rgba(239,68,68,0.1))"
+                : "var(--color-surface-secondary)",
             borderBottom: "1px solid var(--color-border-muted)",
             fontSize: "0.875rem",
             display: "flex",
@@ -259,7 +303,10 @@ export default function CoworkPage() {
           )}
           {sessionError === "create_failed" && (
             <>
-              <span>Could not create task. Check you are logged in and have an organization selected.</span>
+              <span>
+                Could not create task. Check you are logged in and have an
+                organization selected.
+              </span>
               <Link
                 href="/login"
                 style={{ color: "var(--color-accent)", fontWeight: 500 }}
@@ -303,6 +350,9 @@ export default function CoworkPage() {
         todos={state.todos.items}
         toolsUsedInChat={toolsUsedInChat}
         sessionSteps={sessionSteps}
+        assistantMessageIds={state.chat.messages
+          .filter((m) => m.role === "assistant")
+          .map((m) => m.id)}
         onToggle={actions.toggleRightPanel}
         onSelectFile={actions.setActiveArtifact}
         onOpenCreateSkill={() => {

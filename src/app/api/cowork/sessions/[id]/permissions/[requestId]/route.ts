@@ -73,14 +73,11 @@ export async function POST(request: Request, context: RouteContext) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
-    // 8. Resolve permission
-    const resolved = resolvePermission(requestId, body.approved);
+    // 8. Resolve permission (DB-backed)
+    const resolved = await resolvePermission(id, requestId, body.approved);
 
     if (!resolved) {
       return NextResponse.json(

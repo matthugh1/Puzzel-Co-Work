@@ -37,12 +37,15 @@ export async function storePendingQuestion(
     pendingQuestions.set(questionId, pending);
 
     // Timeout after 5 minutes
-    setTimeout(() => {
-      if (pendingQuestions.has(questionId)) {
-        pendingQuestions.delete(questionId);
-        reject(new Error("Question request timed out"));
-      }
-    }, 5 * 60 * 1000);
+    setTimeout(
+      () => {
+        if (pendingQuestions.has(questionId)) {
+          pendingQuestions.delete(questionId);
+          reject(new Error("Question request timed out"));
+        }
+      },
+      5 * 60 * 1000,
+    );
   });
 }
 

@@ -141,7 +141,9 @@ export function rateLimit(
       {
         status: 429,
         headers: {
-          "Retry-After": Math.ceil((result.resetAt - Date.now()) / 1000).toString(),
+          "Retry-After": Math.ceil(
+            (result.resetAt - Date.now()) / 1000,
+          ).toString(),
           "X-RateLimit-Limit": config.maxRequests.toString(),
           "X-RateLimit-Remaining": "0",
           "X-RateLimit-Reset": new Date(result.resetAt).toISOString(),

@@ -104,7 +104,15 @@ export default function CoworkSettingsPage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--color-text-muted)" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
+          color: "var(--color-text-muted)",
+        }}
+      >
         <IconLoader size={24} />
         <span style={{ marginLeft: 8 }}>Loading settings...</span>
       </div>
@@ -114,19 +122,46 @@ export default function CoworkSettingsPage() {
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 24px" }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
-        <div style={{
-          width: 40, height: 40, borderRadius: 12,
-          background: "linear-gradient(135deg, #c084fc, #8b5cf6)",
-          display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
-        }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 32,
+        }}
+      >
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            background: "linear-gradient(135deg, #c084fc, #8b5cf6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#fff",
+          }}
+        >
           <IconSettings size={20} />
         </div>
         <div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0, fontFamily: "var(--font-display)" }}>
+          <h1
+            style={{
+              fontSize: "1.5rem",
+              fontWeight: 700,
+              margin: 0,
+              fontFamily: "var(--font-display)",
+            }}
+          >
             LLM Settings
           </h1>
-          <p style={{ fontSize: "0.875rem", color: "var(--color-text-muted)", margin: 0 }}>
+          <p
+            style={{
+              fontSize: "0.875rem",
+              color: "var(--color-text-muted)",
+              margin: 0,
+            }}
+          >
             Configure the default AI provider and model for Cowork
           </p>
         </div>
@@ -134,31 +169,53 @@ export default function CoworkSettingsPage() {
 
       {/* Status bar */}
       {error && (
-        <div style={{
-          padding: "10px 14px", borderRadius: 10, marginBottom: 20,
-          background: "#fef2f2", border: "1px solid #fca5a5",
-          display: "flex", alignItems: "center", gap: 8,
-          color: "#dc2626", fontSize: "0.875rem",
-        }}>
+        <div
+          style={{
+            padding: "10px 14px",
+            borderRadius: 10,
+            marginBottom: 20,
+            background: "#fef2f2",
+            border: "1px solid #fca5a5",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            color: "#dc2626",
+            fontSize: "0.875rem",
+          }}
+        >
           <IconAlertTriangle size={16} />
           {error}
         </div>
       )}
 
       {configured.length === 0 && (
-        <div style={{
-          padding: "16px", borderRadius: 10, marginBottom: 20,
-          background: "#fffbeb", border: "1px solid #f59e0b",
-          fontSize: "0.875rem", lineHeight: 1.6,
-        }}>
-          <strong>No API keys configured.</strong> Add <code>ANTHROPIC_API_KEY</code> or <code>OPENAI_API_KEY</code> to
-          your <code>.env.local</code> file to enable LLM features.
+        <div
+          style={{
+            padding: "16px",
+            borderRadius: 10,
+            marginBottom: 20,
+            background: "#fffbeb",
+            border: "1px solid #f59e0b",
+            fontSize: "0.875rem",
+            lineHeight: 1.6,
+          }}
+        >
+          <strong>No API keys configured.</strong> Add{" "}
+          <code>ANTHROPIC_API_KEY</code> or <code>OPENAI_API_KEY</code> to your{" "}
+          <code>.env.local</code> file to enable LLM features.
         </div>
       )}
 
       {/* Provider Selection */}
       <section style={{ marginBottom: 28 }}>
-        <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: 8 }}>
+        <label
+          style={{
+            display: "block",
+            fontSize: "0.875rem",
+            fontWeight: 600,
+            marginBottom: 8,
+          }}
+        >
           Default Provider
         </label>
         <div style={{ display: "flex", gap: 8 }}>
@@ -170,20 +227,35 @@ export default function CoworkSettingsPage() {
                 flex: 1,
                 padding: "14px 16px",
                 borderRadius: 12,
-                border: settings.defaultProvider === key
-                  ? "2px solid var(--cw-accent)"
-                  : "1.5px solid var(--color-border)",
-                background: settings.defaultProvider === key ? "var(--cw-accent-soft)" : "#fff",
+                border:
+                  settings.defaultProvider === key
+                    ? "2px solid var(--cw-accent)"
+                    : "1.5px solid var(--color-border)",
+                background:
+                  settings.defaultProvider === key
+                    ? "var(--cw-accent-soft)"
+                    : "#fff",
                 cursor: "pointer",
                 textAlign: "left",
                 transition: "all 0.15s ease",
                 fontFamily: "var(--font-body)",
               }}
             >
-              <div style={{ fontWeight: 600, fontSize: "0.9375rem", marginBottom: 2 }}>
+              <div
+                style={{
+                  fontWeight: 600,
+                  fontSize: "0.9375rem",
+                  marginBottom: 2,
+                }}
+              >
                 {prov.label}
               </div>
-              <div style={{ fontSize: "0.75rem", color: "var(--color-text-muted)" }}>
+              <div
+                style={{
+                  fontSize: "0.75rem",
+                  color: "var(--color-text-muted)",
+                }}
+              >
                 {prov.models.length} models available
               </div>
             </button>
@@ -193,21 +265,34 @@ export default function CoworkSettingsPage() {
 
       {/* Model Selection */}
       <section style={{ marginBottom: 28 }}>
-        <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: 8 }}>
+        <label
+          style={{
+            display: "block",
+            fontSize: "0.875rem",
+            fontWeight: 600,
+            marginBottom: 8,
+          }}
+        >
           Default Model
         </label>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {currentModels.map((m) => (
             <button
               key={m.id}
-              onClick={() => setSettings((prev) => ({ ...prev, defaultModel: m.id }))}
+              onClick={() =>
+                setSettings((prev) => ({ ...prev, defaultModel: m.id }))
+              }
               style={{
                 padding: "12px 16px",
                 borderRadius: 10,
-                border: settings.defaultModel === m.id
-                  ? "2px solid var(--cw-accent)"
-                  : "1.5px solid var(--color-border)",
-                background: settings.defaultModel === m.id ? "var(--cw-accent-soft)" : "#fff",
+                border:
+                  settings.defaultModel === m.id
+                    ? "2px solid var(--cw-accent)"
+                    : "1.5px solid var(--color-border)",
+                background:
+                  settings.defaultModel === m.id
+                    ? "var(--cw-accent-soft)"
+                    : "#fff",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
@@ -218,18 +303,28 @@ export default function CoworkSettingsPage() {
               }}
             >
               <div>
-                <div style={{ fontWeight: 500, fontSize: "0.875rem" }}>{m.label}</div>
-                <div style={{ fontSize: "0.75rem", color: "var(--color-text-muted)", fontFamily: "var(--font-mono)" }}>
+                <div style={{ fontWeight: 500, fontSize: "0.875rem" }}>
+                  {m.label}
+                </div>
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--color-text-muted)",
+                    fontFamily: "var(--font-mono)",
+                  }}
+                >
                   {m.id}
                 </div>
               </div>
-              <span style={{
-                fontSize: "0.6875rem",
-                padding: "2px 8px",
-                borderRadius: 99,
-                background: "var(--color-surface-secondary)",
-                color: "var(--color-text-muted)",
-              }}>
+              <span
+                style={{
+                  fontSize: "0.6875rem",
+                  padding: "2px 8px",
+                  borderRadius: 99,
+                  background: "var(--color-surface-secondary)",
+                  color: "var(--color-text-muted)",
+                }}
+              >
                 {m.contextWindow}
               </span>
             </button>
@@ -239,7 +334,14 @@ export default function CoworkSettingsPage() {
 
       {/* Temperature */}
       <section style={{ marginBottom: 28 }}>
-        <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: 8 }}>
+        <label
+          style={{
+            display: "block",
+            fontSize: "0.875rem",
+            fontWeight: 600,
+            marginBottom: 8,
+          }}
+        >
           Temperature: {settings.temperature.toFixed(1)}
         </label>
         <input
@@ -248,10 +350,23 @@ export default function CoworkSettingsPage() {
           max="2"
           step="0.1"
           value={settings.temperature}
-          onChange={(e) => setSettings((prev) => ({ ...prev, temperature: parseFloat(e.target.value) }))}
+          onChange={(e) =>
+            setSettings((prev) => ({
+              ...prev,
+              temperature: parseFloat(e.target.value),
+            }))
+          }
           style={{ width: "100%", accentColor: "var(--cw-accent)" }}
         />
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.6875rem", color: "var(--color-text-muted)", marginTop: 4 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: "0.6875rem",
+            color: "var(--color-text-muted)",
+            marginTop: 4,
+          }}
+        >
           <span>Precise (0)</span>
           <span>Balanced (0.7)</span>
           <span>Creative (2)</span>
@@ -260,12 +375,24 @@ export default function CoworkSettingsPage() {
 
       {/* Max Tokens */}
       <section style={{ marginBottom: 28 }}>
-        <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: 8 }}>
+        <label
+          style={{
+            display: "block",
+            fontSize: "0.875rem",
+            fontWeight: 600,
+            marginBottom: 8,
+          }}
+        >
           Max Output Tokens
         </label>
         <select
           value={settings.maxTokens}
-          onChange={(e) => setSettings((prev) => ({ ...prev, maxTokens: parseInt(e.target.value) }))}
+          onChange={(e) =>
+            setSettings((prev) => ({
+              ...prev,
+              maxTokens: parseInt(e.target.value),
+            }))
+          }
           style={{
             width: "100%",
             padding: "10px 14px",
@@ -287,12 +414,27 @@ export default function CoworkSettingsPage() {
 
       {/* System Prompt */}
       <section style={{ marginBottom: 28 }}>
-        <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: 8 }}>
-          Custom System Prompt <span style={{ fontWeight: 400, color: "var(--color-text-muted)" }}>(optional)</span>
+        <label
+          style={{
+            display: "block",
+            fontSize: "0.875rem",
+            fontWeight: 600,
+            marginBottom: 8,
+          }}
+        >
+          Custom System Prompt{" "}
+          <span style={{ fontWeight: 400, color: "var(--color-text-muted)" }}>
+            (optional)
+          </span>
         </label>
         <textarea
           value={settings.systemPrompt || ""}
-          onChange={(e) => setSettings((prev) => ({ ...prev, systemPrompt: e.target.value || null }))}
+          onChange={(e) =>
+            setSettings((prev) => ({
+              ...prev,
+              systemPrompt: e.target.value || null,
+            }))
+          }
           placeholder="Override the default system prompt. Leave empty to use the built-in Cowork prompt."
           rows={5}
           style={{
@@ -321,7 +463,8 @@ export default function CoworkSettingsPage() {
             color: "#fff",
             fontSize: "0.875rem",
             fontWeight: 600,
-            cursor: saving || configured.length === 0 ? "not-allowed" : "pointer",
+            cursor:
+              saving || configured.length === 0 ? "not-allowed" : "pointer",
             opacity: saving || configured.length === 0 ? 0.5 : 1,
             transition: "all 0.15s ease",
             fontFamily: "var(--font-body)",
@@ -330,7 +473,15 @@ export default function CoworkSettingsPage() {
           {saving ? "Saving..." : "Save Settings"}
         </button>
         {saved && (
-          <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--cw-success)", fontSize: "0.875rem" }}>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              color: "var(--cw-success)",
+              fontSize: "0.875rem",
+            }}
+          >
             <IconCheckCircle size={16} />
             Saved
           </span>

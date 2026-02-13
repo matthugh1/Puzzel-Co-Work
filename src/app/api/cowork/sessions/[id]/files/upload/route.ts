@@ -16,12 +16,35 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 // Allowed file extensions
 const ALLOWED_EXTENSIONS = new Set([
-  ".pdf", ".docx", ".doc", ".txt", ".md", ".rtf",
-  ".xlsx", ".xls", ".csv", ".tsv",
-  ".pptx", ".ppt",
-  ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp",
-  ".js", ".jsx", ".ts", ".tsx", ".py", ".html", ".css",
-  ".json", ".xml", ".yaml", ".yml",
+  ".pdf",
+  ".docx",
+  ".doc",
+  ".txt",
+  ".md",
+  ".rtf",
+  ".xlsx",
+  ".xls",
+  ".csv",
+  ".tsv",
+  ".pptx",
+  ".ppt",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".svg",
+  ".webp",
+  ".js",
+  ".jsx",
+  ".ts",
+  ".tsx",
+  ".py",
+  ".html",
+  ".css",
+  ".json",
+  ".xml",
+  ".yaml",
+  ".yml",
   ".zip",
 ]);
 
@@ -74,10 +97,7 @@ export async function POST(request: Request, context: RouteContext) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     // 7. Parse multipart form data
@@ -85,10 +105,7 @@ export async function POST(request: Request, context: RouteContext) {
     const file = formData.get("file") as File | null;
 
     if (!file) {
-      return NextResponse.json(
-        { error: "No file provided" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
     // 8. Validate file

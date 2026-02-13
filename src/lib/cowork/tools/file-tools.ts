@@ -25,11 +25,15 @@ function sanitizePath(filePath: string, sessionDir: string): string | null {
 
 export const readTool: ToolExecutor = {
   name: "Read",
-  description: "Read the contents of a file from the session's working directory.",
+  description:
+    "Read the contents of a file from the session's working directory.",
   parameters: {
     type: "object",
     properties: {
-      path: { type: "string", description: "Relative path to the file from the session directory" },
+      path: {
+        type: "string",
+        description: "Relative path to the file from the session directory",
+      },
     },
     required: ["path"],
   },
@@ -62,14 +66,20 @@ export const readTool: ToolExecutor = {
       }
 
       const content = await fs.readFile(fullPath, "utf-8");
-      const truncated = content.length > MAX_OUTPUT_LENGTH
-        ? content.substring(0, MAX_OUTPUT_LENGTH) + `\n\n... (truncated, ${content.length - MAX_OUTPUT_LENGTH} more characters)`
-        : content;
+      const truncated =
+        content.length > MAX_OUTPUT_LENGTH
+          ? content.substring(0, MAX_OUTPUT_LENGTH) +
+            `\n\n... (truncated, ${content.length - MAX_OUTPUT_LENGTH} more characters)`
+          : content;
 
       return {
         content: truncated,
         isError: false,
-        metadata: { filePath, size: stats.size, truncated: content.length > MAX_OUTPUT_LENGTH },
+        metadata: {
+          filePath,
+          size: stats.size,
+          truncated: content.length > MAX_OUTPUT_LENGTH,
+        },
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -89,24 +99,32 @@ export const readTool: ToolExecutor = {
 
 export const writeTool: ToolExecutor = {
   name: "Write",
-  description: "Create or overwrite a file in the session directory. Use this to generate code, documents, or other artifacts. Files written to 'outputs/' directory will be treated as artifacts.",
+  description:
+    "Create or overwrite a file in the session directory. Use this to generate code, documents, or other artifacts. Files written to 'outputs/' directory will be treated as artifacts.",
   parameters: {
     type: "object",
     properties: {
-      path: { type: "string", description: "Relative path to the file from the session directory (use 'outputs/filename.ext' for artifacts)" },
+      path: {
+        type: "string",
+        description:
+          "Relative path to the file from the session directory (use 'outputs/filename.ext' for artifacts)",
+      },
       content: { type: "string", description: "File contents" },
     },
     required: ["path", "content"],
   },
   permissionLevel: "auto", // Files are sandboxed to session directory
   async execute(input, context) {
-    const { path: filePath, content } = input as { path: string; content: string };
+    const { path: filePath, content } = input as {
+      path: string;
+      content: string;
+    };
 
     try {
       // Handle outputs/ directory specially - it should be written to the outputs directory, not working/
       let targetDir = context.sessionDir;
       let relativePath = filePath;
-      
+
       if (filePath.startsWith("outputs/")) {
         // Write to outputs directory (one level up from working/)
         targetDir = path.resolve(context.sessionDir, "..", "outputs");
@@ -134,16 +152,18 @@ export const writeTool: ToolExecutor = {
       return {
         content: `Successfully wrote file "${filePath}" (${content.length} characters)`,
         isError: false,
-        metadata: { 
-          filePath, 
+        metadata: {
+          filePath,
           fullPath,
           size: content.length,
           isArtifact,
           // For artifacts, include info needed to create CoworkFile record
-          ...(isArtifact ? {
-            artifactPath: fullPath,
-            artifactFileName: path.basename(filePath),
-          } : {}),
+          ...(isArtifact
+            ? {
+                artifactPath: fullPath,
+                artifactFileName: path.basename(filePath),
+              }
+            : {}),
         },
       };
     } catch (error) {
@@ -158,7 +178,8 @@ export const writeTool: ToolExecutor = {
 
 export const editTool: ToolExecutor = {
   name: "Edit",
-  description: "Perform a find-and-replace operation in a file. Useful for making targeted changes.",
+  description:
+    "Perform a find-and-replace operation in a file. Useful for making targeted changes.",
   parameters: {
     type: "object",
     properties: {
@@ -170,7 +191,11 @@ export const editTool: ToolExecutor = {
   },
   permissionLevel: "auto", // Files are sandboxed to session directory
   async execute(input, context) {
-    const { path: filePath, find, replace } = input as { path: string; find: string; replace: string };
+    const {
+      path: filePath,
+      find,
+      replace,
+    } = input as { path: string; find: string; replace: string };
 
     try {
       const fullPath = sanitizePath(filePath, context.sessionDir);
@@ -182,7 +207,7 @@ export const editTool: ToolExecutor = {
       }
 
       const content = await fs.readFile(fullPath, "utf-8");
-      
+
       if (!content.includes(find)) {
         return {
           content: `Error: Text "${find}" not found in file "${filePath}"`,
@@ -193,7 +218,11 @@ export const editTool: ToolExecutor = {
       const newContent = content.replace(find, replace);
       await fs.writeFile(fullPath, newContent, "utf-8");
 
-      const count = (content.match(new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || []).length;
+      const count = (
+        content.match(
+          new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
+        ) || []
+      ).length;
 
       return {
         content: `Successfully replaced "${find}" with "${replace}" in "${filePath}" (${count} occurrence(s))`,
@@ -218,7 +247,8 @@ export const editTool: ToolExecutor = {
 
 export const globTool: ToolExecutor = {
   name: "Glob",
-  description: "List files matching a pattern in the session directory. Supports glob patterns (e.g., '*.ts', 'src/**/*.tsx').",
+  description:
+    "List files matching a pattern in the session directory. Supports glob patterns (e.g., '*.ts', 'src/**/*.tsx').",
   parameters: {
     type: "object",
     properties: {
@@ -274,18 +304,29 @@ export const globTool: ToolExecutor = {
 
 export const grepTool: ToolExecutor = {
   name: "Grep",
-  description: "Search for text patterns in files within the session directory. Returns matching lines with file paths.",
+  description:
+    "Search for text patterns in files within the session directory. Returns matching lines with file paths.",
   parameters: {
     type: "object",
     properties: {
-      pattern: { type: "string", description: "Text or regex pattern to search for" },
-      filePattern: { type: "string", description: "Optional glob pattern to limit files to search (e.g., '*.ts')" },
+      pattern: {
+        type: "string",
+        description: "Text or regex pattern to search for",
+      },
+      filePattern: {
+        type: "string",
+        description:
+          "Optional glob pattern to limit files to search (e.g., '*.ts')",
+      },
     },
     required: ["pattern"],
   },
   permissionLevel: "auto",
   async execute(input, context) {
-    const { pattern, filePattern } = input as { pattern: string; filePattern?: string };
+    const { pattern, filePattern } = input as {
+      pattern: string;
+      filePattern?: string;
+    };
 
     try {
       // First, get list of files to search
@@ -314,13 +355,14 @@ export const grepTool: ToolExecutor = {
       }
 
       const regex = new RegExp(pattern, "gi");
-      const results: Array<{ file: string; line: number; content: string }> = [];
+      const results: Array<{ file: string; line: number; content: string }> =
+        [];
 
       for (const file of filesToSearch) {
         try {
           const fullPath = path.join(context.sessionDir, file);
           const stats = await fs.stat(fullPath);
-          
+
           // Skip large files
           if (stats.size > MAX_FILE_SIZE) continue;
 
@@ -356,14 +398,19 @@ export const grepTool: ToolExecutor = {
         .map((r) => `${r.file}:${r.line}: ${r.content}`)
         .join("\n");
 
-      const truncated = results.length > 100
-        ? `${output}\n\n... (${results.length - 100} more matches)`
-        : output;
+      const truncated =
+        results.length > 100
+          ? `${output}\n\n... (${results.length - 100} more matches)`
+          : output;
 
       return {
         content: `Found ${results.length} match(es) for "${pattern}":\n${truncated}`,
         isError: false,
-        metadata: { pattern, matches: results.length, filesSearched: filesToSearch.length },
+        metadata: {
+          pattern,
+          matches: results.length,
+          filesSearched: filesToSearch.length,
+        },
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

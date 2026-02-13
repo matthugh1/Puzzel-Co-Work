@@ -7,7 +7,11 @@ export interface PendingPlan {
   planId: string;
   sessionId: string;
   plan: string;
-  steps: Array<{ id: string; description: string; status: "pending" | "in_progress" | "completed" }>;
+  steps: Array<{
+    id: string;
+    description: string;
+    status: "pending" | "in_progress" | "completed";
+  }>;
   createdAt: number;
 }
 

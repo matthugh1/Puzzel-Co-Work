@@ -13,7 +13,10 @@ function getCookieFromHeader(
   name: string,
 ): string | undefined {
   // Use NextRequest cookies API if available
-  if ("cookies" in request && typeof (request as NextRequest).cookies?.get === "function") {
+  if (
+    "cookies" in request &&
+    typeof (request as NextRequest).cookies?.get === "function"
+  ) {
     return (request as NextRequest).cookies.get(name)?.value;
   }
 

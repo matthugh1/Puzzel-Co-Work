@@ -6,7 +6,12 @@
 import { db } from "./db";
 import type { Prisma } from "@prisma/client";
 
-export type ResourceType = "user" | "auth" | "organization" | "cowork_session";
+export type ResourceType =
+  | "user"
+  | "auth"
+  | "organization"
+  | "cowork_session"
+  | "cowork_skill";
 
 export interface AuditEntry {
   action: string;
@@ -303,6 +308,24 @@ export const audit = {
       action: "cowork_session.updated",
       resourceType: "cowork_session",
       resourceId: sessionId,
+      userId,
+      organizationId,
+      details: metadata,
+      ipAddress: request ? getIpAddress(request) : undefined,
+      userAgent: request ? getUserAgent(request) : undefined,
+    }),
+
+  coworkSkillUpdated: (
+    skillId: string,
+    userId: string,
+    organizationId: string,
+    metadata?: Record<string, unknown>,
+    request?: Request,
+  ) =>
+    logAudit({
+      action: "cowork_skill.updated",
+      resourceType: "cowork_skill",
+      resourceId: skillId,
       userId,
       organizationId,
       details: metadata,

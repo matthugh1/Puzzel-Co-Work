@@ -144,9 +144,15 @@ export async function POST(request: Request) {
     });
 
     // 8. Audit
-    await audit.coworkSessionCreated(session.id, user.id, org.id, {
-      model: session.model,
-    }, request);
+    await audit.coworkSessionCreated(
+      session.id,
+      user.id,
+      org.id,
+      {
+        model: session.model,
+      },
+      request,
+    );
 
     return NextResponse.json(
       {

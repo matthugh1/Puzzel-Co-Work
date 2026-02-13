@@ -9,7 +9,8 @@ import type { ToolExecutor } from "./types";
 
 export const enterPlanModeTool: ToolExecutor = {
   name: "EnterPlanMode",
-  description: "Enter plan mode. In plan mode, only read-only tools (Read, Glob, Grep, WebSearch, WebFetch) are available. Use this when you need to gather information before proposing a plan.",
+  description:
+    "Enter plan mode. In plan mode, only read-only tools (Read, Glob, Grep, WebSearch, WebFetch) are available. Use this when you need to gather information before proposing a plan.",
   parameters: {
     type: "object",
     properties: {},
@@ -24,7 +25,8 @@ export const enterPlanModeTool: ToolExecutor = {
       });
 
       return {
-        content: "Entered plan mode. Only read-only tools are now available. Use ExitPlanMode when ready to propose a plan.",
+        content:
+          "Entered plan mode. Only read-only tools are now available. Use ExitPlanMode when ready to propose a plan.",
         isError: false,
         metadata: { planMode: true },
       };
@@ -40,7 +42,8 @@ export const enterPlanModeTool: ToolExecutor = {
 
 export const exitPlanModeTool: ToolExecutor = {
   name: "ExitPlanMode",
-  description: "Exit plan mode and propose a plan. The plan will be sent to the user for approval before execution continues.",
+  description:
+    "Exit plan mode and propose a plan. The plan will be sent to the user for approval before execution continues.",
   parameters: {
     type: "object",
     properties: {

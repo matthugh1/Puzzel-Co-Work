@@ -7,7 +7,9 @@ interface EmptyStateWidgetProps {
 /**
  * Part 15: Empty state when chat has no messages. Lists capabilities and offers "See all capabilities".
  */
-export function EmptyStateWidget({ onOpenCapabilities }: EmptyStateWidgetProps) {
+export function EmptyStateWidget({
+  onOpenCapabilities,
+}: EmptyStateWidgetProps) {
   return (
     <div
       className="cowork-empty-state-widget"
@@ -23,10 +25,23 @@ export function EmptyStateWidget({ onOpenCapabilities }: EmptyStateWidgetProps) 
         textAlign: "center",
       }}
     >
-      <h3 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: 8, color: "var(--color-text)" }}>
+      <h3
+        style={{
+          fontSize: "1.125rem",
+          fontWeight: 600,
+          marginBottom: 8,
+          color: "var(--color-text)",
+        }}
+      >
         Welcome to Cowork
       </h3>
-      <p style={{ fontSize: "0.9375rem", color: "var(--color-text-muted)", marginBottom: 16 }}>
+      <p
+        style={{
+          fontSize: "0.9375rem",
+          color: "var(--color-text-muted)",
+          marginBottom: 16,
+        }}
+      >
         I can help you with:
       </p>
       <ul

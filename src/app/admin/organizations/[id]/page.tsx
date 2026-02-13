@@ -251,9 +251,7 @@ export default function OrganizationDetailPage() {
               >
                 Created:
               </dt>
-              <dd>
-                {new Date(organization.createdAt).toLocaleDateString()}
-              </dd>
+              <dd>{new Date(organization.createdAt).toLocaleDateString()}</dd>
             </dl>
           </div>
 

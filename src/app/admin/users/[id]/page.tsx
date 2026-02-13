@@ -100,9 +100,7 @@ export default function EditUserPage() {
       // Redirect to user list
       router.push("/admin/users");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to update user",
-      );
+      setError(err instanceof Error ? err.message : "Failed to update user");
       setSaving(false);
     }
   };

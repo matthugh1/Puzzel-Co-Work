@@ -57,10 +57,7 @@ export async function GET(request: Request, context: RouteContext) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     const todos = await db.coworkTodoItem.findMany({
@@ -81,10 +78,7 @@ export async function GET(request: Request, context: RouteContext) {
     });
   } catch (error) {
     console.error("Get todos error:", error);
-    return NextResponse.json(
-      { error: "Failed to get todos" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to get todos" }, { status: 500 });
   }
 }
 
@@ -143,10 +137,7 @@ export async function PUT(request: Request, context: RouteContext) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     // 8. Replace all todos in a transaction
@@ -167,7 +158,10 @@ export async function PUT(request: Request, context: RouteContext) {
             sessionId: id,
             content: todo.content,
             activeForm: todo.activeForm,
-            status: todo.status.toUpperCase().replace(" ", "_") as "PENDING" | "IN_PROGRESS" | "COMPLETED",
+            status: todo.status.toUpperCase().replace(" ", "_") as
+              | "PENDING"
+              | "IN_PROGRESS"
+              | "COMPLETED",
             sortOrder: i,
           },
         });

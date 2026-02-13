@@ -20,9 +20,7 @@ interface User {
   permissions: string[];
 }
 
-const userNavItems: NavItem[] = [
-  { href: "/", label: "Home" },
-];
+const userNavItems: NavItem[] = [{ href: "/", label: "Home" }];
 
 const systemNavItems: NavItem[] = [
   {

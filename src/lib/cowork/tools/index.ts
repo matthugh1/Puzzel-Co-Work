@@ -3,7 +3,13 @@
  * Central registry for all Cowork tools
  */
 
-import type { ToolExecutor, ToolSchema, ToolContext, ToolResult } from "./types";
+import type { CanonicalToolDefinition } from "@/lib/cowork/llm/types";
+import type {
+  ToolExecutor,
+  ToolSchema,
+  ToolContext,
+  ToolResult,
+} from "./types";
 
 // Tool executors will be imported here as we build them
 const toolExecutors: Map<string, ToolExecutor> = new Map();
@@ -48,10 +54,11 @@ export function getAllTools(): ToolExecutor[] {
 export function getAnthropicTools(): ToolSchema[] {
   return getAllTools().map((tool) => {
     // Ensure parameters has type: "object" if not already present
-    const schema = tool.parameters.type === "object" 
-      ? tool.parameters 
-      : { type: "object", ...tool.parameters };
-    
+    const schema =
+      tool.parameters.type === "object"
+        ? tool.parameters
+        : { type: "object", ...tool.parameters };
+
     return {
       name: tool.name,
       description: tool.description,
@@ -82,6 +89,25 @@ export function getOpenAITools(): Array<{
 }
 
 /**
+ * Get tools in canonical format for the LLM provider abstraction.
+ */
+export function getCanonicalTools(): CanonicalToolDefinition[] {
+  return getAllTools().map((tool) => {
+    const params = tool.parameters as Record<string, unknown>;
+    const inputSchema = (
+      params?.type === "object"
+        ? params
+        : { type: "object" as const, ...params }
+    ) as CanonicalToolDefinition["inputSchema"];
+    return {
+      name: tool.name,
+      description: tool.description,
+      inputSchema,
+    };
+  });
+}
+
+/**
  * Execute a tool by name
  */
 export async function executeTool(
@@ -97,12 +123,13 @@ export async function executeTool(
     };
   }
 
-  // Check if tool is allowed in plan mode
+  // Check if tool is allowed in plan mode (read-only + ExitPlanMode to propose plan)
   if (context.planMode) {
     const readOnlyTools = ["Read", "Glob", "Grep", "WebSearch", "WebFetch"];
-    if (!readOnlyTools.includes(tool.name)) {
+    const allowedInPlanMode = [...readOnlyTools, "ExitPlanMode"];
+    if (!allowedInPlanMode.includes(tool.name)) {
       return {
-        content: `Tool "${name}" is not allowed in plan mode. Only read-only tools are permitted.`,
+        content: `Tool "${name}" is not allowed in plan mode. Only read-only tools are permitted. Use ExitPlanMode when ready to propose a plan.`,
         isError: true,
       };
     }
@@ -124,7 +151,9 @@ export async function executeTool(
 /**
  * Get permission level for a tool
  */
-export function getToolPermissionLevel(name: string): "auto" | "ask" | "blocked" {
+export function getToolPermissionLevel(
+  name: string,
+): "auto" | "ask" | "blocked" {
   const tool = getTool(name);
   return tool?.permissionLevel || "blocked";
 }

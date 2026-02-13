@@ -50,10 +50,7 @@ export async function GET(request: Request, context: RouteContext) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     // 6. Get sub-agents

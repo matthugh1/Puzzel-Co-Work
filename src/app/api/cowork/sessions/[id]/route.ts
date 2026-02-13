@@ -73,10 +73,7 @@ export async function GET(request: Request, context: RouteContext) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -87,6 +84,7 @@ export async function GET(request: Request, context: RouteContext) {
         title: session.title,
         status: session.status.toLowerCase(),
         model: session.model,
+        planMode: session.planMode,
         createdAt: session.createdAt.toISOString(),
         updatedAt: session.updatedAt.toISOString(),
       },
@@ -184,10 +182,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     // 8. Update
@@ -203,7 +198,13 @@ export async function PATCH(request: Request, context: RouteContext) {
     });
 
     // 9. Audit
-    await audit.coworkSessionUpdated(session.id, user.id, org.id, updateData, request);
+    await audit.coworkSessionUpdated(
+      session.id,
+      user.id,
+      org.id,
+      updateData,
+      request,
+    );
 
     return NextResponse.json({
       session: {
@@ -282,19 +283,22 @@ export async function DELETE(request: Request, context: RouteContext) {
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     // 7. Delete (cascade deletes messages, todos, files)
     await db.coworkSession.delete({ where: { id } });
 
     // 8. Audit
-    await audit.coworkSessionDeleted(id, user.id, org.id, {
-      title: existing.title,
-    }, request);
+    await audit.coworkSessionDeleted(
+      id,
+      user.id,
+      org.id,
+      {
+        title: existing.title,
+      },
+      request,
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

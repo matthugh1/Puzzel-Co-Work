@@ -27,7 +27,7 @@ export async function GET(request: Request) {
         acc[key] = value;
         return acc;
       },
-      {} as Record<string, typeof PROVIDERS[keyof typeof PROVIDERS]>,
+      {} as Record<string, (typeof PROVIDERS)[keyof typeof PROVIDERS]>,
     );
 
   return NextResponse.json({

@@ -14,10 +14,7 @@ import {
 } from "@/lib/validation";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
-import {
-  isOrganizationMember,
-  isOrganizationAdmin,
-} from "@/lib/organization";
+import { isOrganizationMember, isOrganizationAdmin } from "@/lib/organization";
 
 interface RouteContext {
   params: Promise<{ id: string }>;

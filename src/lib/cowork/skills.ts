@@ -1,18 +1,24 @@
 /**
  * Skills Registry
- * File-based skill system with runtime metadata loading and trigger matching
+ * File-based built-in skills + DB-backed org/session skills
  */
 
 import fs from "fs/promises";
 import path from "path";
 import matter from "gray-matter";
+import { db } from "@/lib/db";
 
 export interface SkillMetadata {
   id: string;
   name: string;
   description: string;
-  path: string;
-  triggers?: string[]; // Keywords/phrases that trigger this skill
+  /** File path for built-in/session file-based skills; empty for DB skills */
+  path?: string;
+  triggers?: string[];
+  /** Inline content for DB-backed skills; when set, no file read */
+  content?: string;
+  /** Parameter definitions (DB skills only; for {{param}} placeholder binding) */
+  parameters?: import("@/types/skill").SkillParameter[];
 }
 
 export interface SkillContent {
@@ -30,7 +36,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
  */
 export async function loadSkillRegistry(): Promise<SkillMetadata[]> {
   const now = Date.now();
-  
+
   // Return cached registry if still valid
   if (registryCache && now - cacheTimestamp < CACHE_TTL) {
     return registryCache;
@@ -67,7 +73,10 @@ export async function loadSkillRegistry(): Promise<SkillMetadata[]> {
           try {
             parsed = matter(fileContent);
           } catch (parseError) {
-            console.error(`[Skills] Error parsing frontmatter for ${skillId}:`, parseError);
+            console.error(
+              `[Skills] Error parsing frontmatter for ${skillId}:`,
+              parseError,
+            );
             continue; // Skip this skill
           }
 
@@ -80,7 +89,7 @@ export async function loadSkillRegistry(): Promise<SkillMetadata[]> {
             name: skillName,
             description: skillDescription,
             path: skillFile,
-            triggers: Array.isArray(triggers) ? triggers : [],
+            triggers: Array.isArray(triggers) ? triggers : ([] as string[]),
           });
         } catch (err) {
           console.error(`[Skills] Error loading skill ${skillId}:`, err);
@@ -88,7 +97,10 @@ export async function loadSkillRegistry(): Promise<SkillMetadata[]> {
         }
       }
     } catch (err) {
-      console.error(`[Skills] Error reading skills directory ${skillsDir}:`, err);
+      console.error(
+        `[Skills] Error reading skills directory ${skillsDir}:`,
+        err,
+      );
     }
   }
 
@@ -100,146 +112,175 @@ export async function loadSkillRegistry(): Promise<SkillMetadata[]> {
 }
 
 /**
- * Match skills based on user message
- * Simple keyword/phrase matching against skill descriptions and triggers
- */
-export function matchSkills(
-  userMessage: string,
-  registry: SkillMetadata[],
-): string[] {
-  const messageLower = userMessage.toLowerCase();
-  const matched: string[] = [];
-
-  for (const skill of registry) {
-    // Check triggers
-    if (skill.triggers && skill.triggers.length > 0) {
-      for (const trigger of skill.triggers) {
-        if (messageLower.includes(trigger.toLowerCase())) {
-          matched.push(skill.id);
-          break;
-        }
-      }
-    }
-
-    // Check description keywords (simple word matching)
-    const descWords = skill.description.toLowerCase().split(/\s+/);
-    for (const word of descWords) {
-      if (word.length > 4 && messageLower.includes(word)) {
-        // Only match words longer than 4 chars to avoid false positives
-        if (!matched.includes(skill.id)) {
-          matched.push(skill.id);
-        }
-        break;
-      }
-    }
-  }
-
-  return matched;
-}
-
-/**
  * Load full skill content (markdown body)
- * @param skillId - Skill ID to load
- * @param sessionId - Optional session ID for session-specific skills
+ * Uses inline content for DB skills, or reads file for path-based skills.
  */
-export async function loadSkillContent(skillId: string, sessionId?: string): Promise<SkillContent | null> {
+export async function loadSkillContent(
+  skillId: string,
+  sessionId?: string,
+): Promise<SkillContent | null> {
   try {
-    // Load appropriate registry (built-in or session-specific)
-    const registry = sessionId ? await loadSessionSkills(sessionId) : await loadSkillRegistry();
+    const registry = sessionId
+      ? await loadSessionSkills(sessionId)
+      : await loadSkillRegistry();
     const skill = registry.find((s) => s.id === skillId);
 
     if (!skill) {
       return null;
     }
 
-    const fileContent = await fs.readFile(skill.path, "utf-8");
-    let parsed;
-    try {
-      parsed = matter(fileContent);
-    } catch (parseError) {
-      console.error(`[Skills] Error parsing skill content ${skillId}:`, parseError);
-      return null;
+    if (skill.content != null && skill.content !== "") {
+      return { metadata: skill, content: skill.content };
     }
 
-    return {
-      metadata: skill,
-      content: parsed.content || "", // Markdown body without frontmatter
-    };
+    if (skill.path) {
+      const fileContent = await fs.readFile(skill.path, "utf-8");
+      const parsed = matter(fileContent);
+      return {
+        metadata: skill,
+        content: parsed.content || "",
+      };
+    }
+
+    return null;
   } catch (err) {
     console.error(`[Skills] Error loading skill content ${skillId}:`, err);
     return null;
   }
 }
 
+export interface DbSkillListItem {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  triggers: string[];
+  tags: string[];
+}
+
+export interface DbSkillListFilters {
+  category?: string;
+  search?: string;
+  tags?: string[];
+}
+
 /**
- * Load skills for a specific session
- * Checks both built-in skills and session-specific skills
+ * Load DB skills for list API (metadata only).
+ * organizationId required. Returns all custom skills for the org (built-in come from elsewhere).
+ * Optional filters: category, search (name/description), tags.
  */
-export async function loadSessionSkills(sessionId: string): Promise<SkillMetadata[]> {
+export async function loadDbSkillsForList(
+  organizationId: string,
+  _sessionId?: string | null,
+  filters?: DbSkillListFilters,
+): Promise<DbSkillListItem[]> {
   try {
-    const builtInSkills = await loadSkillRegistry();
-    
-    // Load session-specific skills from storage/sessions/{id}/skills/
-    const sessionSkillsDir = path.join(
-      process.cwd(),
-      "storage",
-      "sessions",
-      sessionId,
-      "skills",
-    );
+    const where: Record<string, unknown> = { organizationId };
 
-    const sessionSkills: SkillMetadata[] = [];
-
-    try {
-      await fs.access(sessionSkillsDir);
-      const entries = await fs.readdir(sessionSkillsDir, { withFileTypes: true });
-
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
-
-        const skillDir = path.join(sessionSkillsDir, entry.name);
-        const skillFile = path.join(skillDir, "SKILL.md");
-
-        try {
-          const fileContent = await fs.readFile(skillFile, "utf-8");
-          let parsed;
-          try {
-            parsed = matter(fileContent);
-          } catch (parseError) {
-            console.error(`[Skills] Error parsing frontmatter for session skill ${entry.name}:`, parseError);
-            continue; // Skip this skill
-          }
-
-          const skillId = `session-${sessionId}-${entry.name}`;
-          const skillName = parsed.data?.name || entry.name;
-          const skillDescription = parsed.data?.description || "";
-          const triggers = parsed.data?.triggers || [];
-
-          sessionSkills.push({
-            id: skillId,
-            name: skillName,
-            description: skillDescription,
-            path: skillFile,
-            triggers: Array.isArray(triggers) ? triggers : [],
-          });
-        } catch (err) {
-          console.error(`[Skills] Error loading session skill ${entry.name}:`, err);
-        }
-      }
-    } catch {
-      // Session skills directory doesn't exist, that's fine
+    if (filters?.category?.trim()) {
+      where.category = filters.category.trim();
     }
+    if (filters?.search?.trim()) {
+      const searchTerm = filters.search.trim();
+      where.OR = [
+        { name: { contains: searchTerm, mode: "insensitive" } },
+        { description: { contains: searchTerm, mode: "insensitive" } },
+      ];
+    }
+    // Tags filter: Prisma Json does not support hasSome easily; filter in memory below
+    const tagsFilter = filters?.tags?.filter(Boolean) ?? [];
 
-    return [...builtInSkills, ...sessionSkills];
+    const rows = await db.coworkSkill.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        category: true,
+        triggers: true,
+        tags: true,
+      },
+    });
+
+    let results = rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      description: r.description,
+      category: r.category ?? "General",
+      triggers: Array.isArray(r.triggers) ? (r.triggers as string[]) : [],
+      tags: Array.isArray(r.tags) ? (r.tags as string[]) : [],
+    }));
+
+    if (tagsFilter.length > 0) {
+      results = results.filter((r) =>
+        tagsFilter.some((t) =>
+          r.tags.some((rt) => rt.toLowerCase() === t.toLowerCase()),
+        ),
+      );
+    }
+    return results;
   } catch (err) {
-    console.error("[Skills] Error loading session skills:", err);
-    // Return empty array on error - skills are optional
+    console.error("[Skills] loadDbSkillsForList error:", err);
     return [];
   }
 }
 
 /**
- * Invalidate cache (call after adding/modifying skills)
+ * Load skills for a specific session: built-in (file) + org/session skills (DB).
+ */
+export async function loadSessionSkills(
+  sessionId: string,
+): Promise<SkillMetadata[]> {
+  try {
+    const builtInSkills = await loadSkillRegistry();
+
+    const session = await db.coworkSession.findUnique({
+      where: { id: sessionId },
+      select: { organizationId: true },
+    });
+
+    const dbSkills: SkillMetadata[] = [];
+    if (session) {
+      const rows = await db.coworkSkill.findMany({
+        where: {
+          organizationId: session.organizationId,
+          status: "published",
+          OR: [{ sessionId: null }, { sessionId }],
+        },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          triggers: true,
+          content: true,
+          parameters: true,
+        },
+      });
+      for (const r of rows) {
+        const params = r.parameters;
+        const parameters = Array.isArray(params)
+          ? (params as unknown as import("@/types/skill").SkillParameter[])
+          : undefined;
+        dbSkills.push({
+          id: r.id,
+          name: r.name,
+          description: r.description,
+          triggers: Array.isArray(r.triggers) ? (r.triggers as string[]) : [],
+          content: r.content ?? "",
+          parameters,
+        });
+      }
+    }
+
+    return [...builtInSkills, ...dbSkills];
+  } catch (err) {
+    console.error("[Skills] Error loading session skills:", err);
+    return [];
+  }
+}
+
+/**
+ * Invalidate file registry cache (DB skills are not cached here).
  */
 export function invalidateSkillCache(): void {
   registryCache = null;

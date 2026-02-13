@@ -15,35 +15,14 @@ import type {
   CanonicalStreamEvent,
   CanonicalError,
   CanonicalStopReason,
-  CanonicalToolInputSchema,
 } from "../types";
+import { enforceStrictSchema } from "../utils";
 
 const OPENAI_MODEL_MAP: Record<string, string> = {
   sonnet: "gpt-4o",
   opus: "gpt-4o",
   haiku: "gpt-4o-mini",
 };
-
-/** Make schema strict for OpenAI: additionalProperties: false, all properties required, optional → nullable. */
-function enforceStrictSchema(schema: CanonicalToolInputSchema): Record<string, unknown> {
-  if (schema.type !== "object") return schema as Record<string, unknown>;
-  const properties = schema.properties ?? {};
-  const required = schema.required ?? [];
-  const allPropertyNames = Object.keys(properties);
-  const strictProperties: Record<string, unknown> = {};
-  for (const [key, prop] of Object.entries(properties)) {
-    const p = prop as Record<string, unknown>;
-    strictProperties[key] = !required.includes(key) && p.type !== undefined
-      ? { ...p, type: Array.isArray(p.type) ? [...(p.type as string[]), "null"] : [p.type, "null"] }
-      : p;
-  }
-  return {
-    type: "object",
-    properties: strictProperties,
-    required: allPropertyNames,
-    additionalProperties: false,
-  };
-}
 
 function mapOpenAIStopReason(
   finishReason: string | undefined,
@@ -58,6 +37,42 @@ function mapOpenAIStopReason(
     default:
       return "end_turn";
   }
+}
+
+/** OpenAI does not allow type "tool_use" in message content; tool calls must be in tool_calls. */
+function sanitiseOpenAIMessages(messages: unknown[]): unknown[] {
+  return messages.map((m) => {
+    const msg = m as {
+      role?: string;
+      content?: unknown;
+      tool_calls?: unknown[];
+    };
+    if (msg.role !== "assistant" || !Array.isArray(msg.content)) return m;
+    const parts = msg.content as Array<{
+      type?: string;
+      text?: string;
+      id?: string;
+      name?: string;
+      input?: unknown;
+    }>;
+    const textParts = parts.filter((p) => p.type === "text");
+    const toolUseParts = parts.filter((p) => p.type === "tool_use");
+    if (toolUseParts.length === 0) return m;
+    const textContent = textParts.map((p) => p.text ?? "").join("") || null;
+    const tool_calls = toolUseParts.map((p) => ({
+      id: p.id ?? "",
+      type: "function" as const,
+      function: {
+        name: p.name ?? "",
+        arguments: JSON.stringify(p.input ?? {}),
+      },
+    }));
+    return {
+      role: "assistant",
+      content: textContent,
+      tool_calls,
+    };
+  });
 }
 
 /** Stub stream adapter for OpenAI (full impl when wiring stream). */
@@ -109,33 +124,62 @@ export const openaiAdapter: LLMProviderAdapter = {
       if (msg.role === "system") {
         result.push({
           role: "system",
-          content: (msg.content[0] as { type: "text"; text: string } | undefined)?.text ?? "",
+          content:
+            (msg.content[0] as { type: "text"; text: string } | undefined)
+              ?.text ?? "",
         });
         continue;
       }
-      const toolResults = msg.content.filter((b) => b.type === "tool_result");
-      const otherContent = msg.content.filter((b) => b.type !== "tool_result");
-      for (const block of toolResults) {
-        if (block.type !== "tool_result") continue;
-        result.push({
-          role: "tool",
-          tool_call_id: block.toolUseId,
-          content: block.isError ? `Error: ${block.content}` : block.content,
-        });
+      if (msg.role === "user") {
+        const toolResults = msg.content.filter((b) => b.type === "tool_result");
+        const textParts = msg.content.filter((b) => b.type === "text");
+        for (const block of toolResults) {
+          if (block.type !== "tool_result") continue;
+          result.push({
+            role: "tool",
+            tool_call_id: block.toolUseId,
+            content: block.isError ? `Error: ${block.content}` : block.content,
+          });
+        }
+        const textContent = textParts
+          .map((b) => (b.type === "text" ? b.text : ""))
+          .join("")
+          .trim();
+        // Only push a user message when there is text; tool-only user messages become only "tool" role messages.
+        if (textContent) {
+          result.push({ role: "user", content: textContent });
+        }
+        continue;
       }
-      if (otherContent.length > 0) {
-        const content = otherContent.map((block) => {
-          if (block.type === "text") return { type: "text", text: block.text };
-          if (block.type === "tool_use")
-            return {
-              type: "tool_use",
-              id: block.id,
-              name: block.name,
-              input: JSON.stringify(block.input),
-            };
-          return { type: "text", text: "" };
+      if (msg.role === "assistant") {
+        const textParts = msg.content.filter((b) => b.type === "text");
+        const toolUseBlocks = msg.content.filter((b) => b.type === "tool_use");
+        const textContent = textParts
+          .map((b) => (b.type === "text" ? b.text : ""))
+          .join("");
+        const tool_calls =
+          toolUseBlocks.length > 0
+            ? (
+                toolUseBlocks as Array<{
+                  type: "tool_use";
+                  id: string;
+                  name: string;
+                  input?: Record<string, unknown>;
+                }>
+              ).map((b) => ({
+                id: b.id,
+                type: "function" as const,
+                function: {
+                  name: b.name,
+                  arguments: JSON.stringify(b.input ?? {}),
+                },
+              }))
+            : undefined;
+        result.push({
+          role: "assistant",
+          content: textContent || (tool_calls?.length ? null : " "),
+          ...(tool_calls && tool_calls.length > 0 ? { tool_calls } : {}),
         });
-        result.push({ role: msg.role as "user" | "assistant", content });
       }
     }
     return result;
@@ -161,15 +205,18 @@ export const openaiAdapter: LLMProviderAdapter = {
   },
 
   buildRequest(canonical: CanonicalRequest): unknown {
-    const messages: unknown[] = [
+    const rawMessages: unknown[] = [
       { role: "system", content: canonical.systemPrompt },
       ...this.toProviderMessages(canonical.messages),
     ];
+    const messages = sanitiseOpenAIMessages(rawMessages);
     return {
       model: this.resolveModel(canonical.model),
       messages,
       tools:
-        canonical.tools.length > 0 ? this.toProviderTools(canonical.tools) : undefined,
+        canonical.tools.length > 0
+          ? this.toProviderTools(canonical.tools)
+          : undefined,
       tool_choice: canonical.toolChoice
         ? this.toProviderToolChoice(canonical.toolChoice)
         : undefined,
@@ -216,11 +263,23 @@ export const openaiAdapter: LLMProviderAdapter = {
   },
 
   normaliseError(error: unknown): CanonicalError {
-    const e = error as { status?: number; code?: string; message?: string } | undefined;
+    const e = error as
+      | { status?: number; code?: string; message?: string }
+      | undefined;
     const message = e?.message ?? String(error);
-    const code = e?.status === 429 ? "rate_limit" : e?.code === "invalid_api_key" ? "auth" : "unknown";
+    const code =
+      e?.status === 429
+        ? "rate_limit"
+        : e?.code === "invalid_api_key"
+          ? "auth"
+          : "unknown";
     return {
-      code: code === "rate_limit" ? "rate_limit" : code === "auth" ? "auth" : "unknown",
+      code:
+        code === "rate_limit"
+          ? "rate_limit"
+          : code === "auth"
+            ? "auth"
+            : "unknown",
       message,
       retryable: e?.status === 429,
       providerCode: e?.code,

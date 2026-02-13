@@ -12,11 +12,13 @@ const REQUEST_TIMEOUT = 10000; // 10 seconds
  * Simple web search using DuckDuckGo HTML interface
  * This is a basic implementation - in production you might want to use Tavily API or Google Custom Search
  */
-async function searchWeb(query: string): Promise<Array<{ title: string; url: string; snippet: string }>> {
+async function searchWeb(
+  query: string,
+): Promise<Array<{ title: string; url: string; snippet: string }>> {
   try {
     // Use DuckDuckGo's instant answer API (no API key required)
     const searchUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
-    
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
@@ -33,7 +35,7 @@ async function searchWeb(query: string): Promise<Array<{ title: string; url: str
       throw new Error(`Search API returned ${response.status}`);
     }
 
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       Results?: Array<{ FirstURL: string; Text: string }>;
       RelatedTopics?: Array<{ FirstURL: string; Text: string }>;
     };
@@ -55,7 +57,10 @@ async function searchWeb(query: string): Promise<Array<{ title: string; url: str
 
     // Process RelatedTopics if we need more results
     if (results.length < MAX_RESULTS && data.RelatedTopics) {
-      for (const topic of data.RelatedTopics.slice(0, MAX_RESULTS - results.length)) {
+      for (const topic of data.RelatedTopics.slice(
+        0,
+        MAX_RESULTS - results.length,
+      )) {
         if (topic.FirstURL && topic.Text) {
           results.push({
             title: topic.Text.split(" - ")[0] || topic.Text.substring(0, 60),
@@ -70,34 +75,40 @@ async function searchWeb(query: string): Promise<Array<{ title: string; url: str
   } catch (error) {
     // Fallback: return a simple error message
     console.error("[WebSearch] Error:", error);
-    return [{
-      title: "Search Error",
-      url: `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
-      snippet: `Unable to fetch search results. You can try searching manually at the URL above. Error: ${error instanceof Error ? error.message : String(error)}`,
-    }];
+    return [
+      {
+        title: "Search Error",
+        url: `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
+        snippet: `Unable to fetch search results. You can try searching manually at the URL above. Error: ${error instanceof Error ? error.message : String(error)}`,
+      },
+    ];
   }
 }
 
 export const webSearchTool: ToolExecutor = {
   name: "WebSearch",
-  description: "Search the web for information. Returns a list of relevant URLs with titles and snippets.",
+  description:
+    "Search the web for information. Returns a list of relevant URLs with titles and snippets.",
   parameters: {
     type: "object",
     properties: {
-      query: { 
-        type: "string", 
-        description: "Search query (e.g., 'Python async await tutorial')" 
+      query: {
+        type: "string",
+        description: "Search query (e.g., 'Python async await tutorial')",
       },
-      maxResults: { 
-        type: "number", 
-        description: "Maximum number of results to return (default 10, max 20)" 
+      maxResults: {
+        type: "number",
+        description: "Maximum number of results to return (default 10, max 20)",
       },
     },
     required: ["query"],
   },
   permissionLevel: "auto",
   async execute(input, context) {
-    const { query, maxResults } = input as { query: string; maxResults?: number };
+    const { query, maxResults } = input as {
+      query: string;
+      maxResults?: number;
+    };
 
     if (!query || typeof query !== "string") {
       return {
@@ -106,7 +117,10 @@ export const webSearchTool: ToolExecutor = {
       };
     }
 
-    const limit = Math.min(maxResults && maxResults > 0 ? maxResults : MAX_RESULTS, 20);
+    const limit = Math.min(
+      maxResults && maxResults > 0 ? maxResults : MAX_RESULTS,
+      20,
+    );
 
     try {
       const results = await searchWeb(query);

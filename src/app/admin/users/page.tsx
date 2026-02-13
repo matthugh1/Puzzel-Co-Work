@@ -40,7 +40,7 @@ export default function UsersPage() {
         const user = data.user;
         setCanCreate(
           user.permissions.includes("users:admin") ||
-          user.roles.includes("admin"),
+            user.roles.includes("admin"),
         );
       }
     } catch (err) {
@@ -388,7 +388,9 @@ export default function UsersPage() {
                             }}
                           >
                             {user.organizations
-                              ? user.organizations.map((org) => org.name).join(", ")
+                              ? user.organizations
+                                  .map((org) => org.name)
+                                  .join(", ")
                               : user.organizationRole
                                 ? "Current Org"
                                 : "—"}
@@ -402,7 +404,8 @@ export default function UsersPage() {
                               <span
                                 style={{
                                   display: "inline-block",
-                                  padding: "var(--spacing-xs) var(--spacing-sm)",
+                                  padding:
+                                    "var(--spacing-xs) var(--spacing-sm)",
                                   borderRadius: "var(--radius-sm)",
                                   fontSize: "0.75rem",
                                   fontWeight: 600,
@@ -440,7 +443,8 @@ export default function UsersPage() {
                                     key={role.id}
                                     style={{
                                       display: "inline-block",
-                                      padding: "var(--spacing-xs) var(--spacing-sm)",
+                                      padding:
+                                        "var(--spacing-xs) var(--spacing-sm)",
                                       borderRadius: "var(--radius-sm)",
                                       fontSize: "0.75rem",
                                       fontWeight: 600,

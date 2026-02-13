@@ -10,19 +10,23 @@ import type { ToolExecutor } from "./types";
 
 export const createSpreadsheetTool: ToolExecutor = {
   name: "CreateSpreadsheet",
-  description: "Create an Excel spreadsheet (.xlsx) with one or more sheets containing tabular data. The spreadsheet will be saved to the session directory and made available for download.",
+  description:
+    "Create an Excel spreadsheet (.xlsx) with one or more sheets containing tabular data. The spreadsheet will be saved to the session directory and made available for download.",
   parameters: {
     type: "object",
+    additionalProperties: false,
     properties: {
       filename: {
         type: "string",
-        description: "Name of the spreadsheet file (e.g., 'data.xlsx'). Must end with .xlsx",
+        description:
+          "Name of the spreadsheet file (e.g., 'data.xlsx'). Must end with .xlsx",
       },
       sheets: {
         type: "array",
         description: "Array of sheets, each with a name and data table",
         items: {
           type: "object",
+          additionalProperties: false,
           properties: {
             name: {
               type: "string",
@@ -30,16 +34,14 @@ export const createSpreadsheetTool: ToolExecutor = {
             },
             data: {
               type: "array",
-              description: "Array of rows, where each row is an array of cell values. First row typically contains headers.",
+              description:
+                "Array of rows, where each row is an array of cell values. First row typically contains headers.",
               items: {
                 type: "array",
                 items: {
-                  oneOf: [
-                    { type: "string" },
-                    { type: "number" },
-                    { type: "boolean" },
-                    { type: "null" },
-                  ],
+                  type: "string",
+                  description:
+                    "Cell value (use string for text; numbers and booleans can be sent as strings)",
                 },
               },
             },
@@ -99,7 +101,7 @@ export const createSpreadsheetTool: ToolExecutor = {
       const sheetSummary = sheets
         .map(
           (s, i) =>
-            `  ${i + 1}. "${s.name}" - ${s.data.length} rows × ${s.data[0]?.length || 0} columns`
+            `  ${i + 1}. "${s.name}" - ${s.data.length} rows × ${s.data[0]?.length || 0} columns`,
         )
         .join("\n");
 

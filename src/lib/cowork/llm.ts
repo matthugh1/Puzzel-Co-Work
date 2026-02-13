@@ -43,15 +43,34 @@ export interface ChatMessage {
 
 export const PROVIDERS: Record<
   LLMProvider,
-  { label: string; models: { id: string; label: string; contextWindow: string }[] }
+  {
+    label: string;
+    models: { id: string; label: string; contextWindow: string }[];
+  }
 > = {
   anthropic: {
     label: "Anthropic (Claude)",
     models: [
-      { id: "claude-sonnet-4-20250514", label: "Claude Sonnet 4", contextWindow: "200K" },
-      { id: "claude-opus-4-20250514", label: "Claude Opus 4", contextWindow: "200K" },
-      { id: "claude-3-7-sonnet-latest", label: "Claude 3.7 Sonnet", contextWindow: "200K" },
-      { id: "claude-3-5-haiku-latest", label: "Claude 3.5 Haiku", contextWindow: "200K" },
+      {
+        id: "claude-sonnet-4-20250514",
+        label: "Claude Sonnet 4",
+        contextWindow: "200K",
+      },
+      {
+        id: "claude-opus-4-20250514",
+        label: "Claude Opus 4",
+        contextWindow: "200K",
+      },
+      {
+        id: "claude-3-7-sonnet-latest",
+        label: "Claude 3.7 Sonnet",
+        contextWindow: "200K",
+      },
+      {
+        id: "claude-3-5-haiku-latest",
+        label: "Claude 3.5 Haiku",
+        contextWindow: "200K",
+      },
     ],
   },
   openai: {
@@ -234,12 +253,18 @@ export function streamChat(
   return new ReadableStream({
     async start(controller) {
       const send = (eventType: string, data: unknown) => {
-        const payload = JSON.stringify({ type: eventType, ...( typeof data === 'object' && data !== null ? data : { data }) });
+        const payload = JSON.stringify({
+          type: eventType,
+          ...(typeof data === "object" && data !== null ? data : { data }),
+        });
         controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
       };
 
       const assistantMessageId = `msg_${Date.now()}`;
-      send("message_start", { messageId: assistantMessageId, role: "assistant" });
+      send("message_start", {
+        messageId: assistantMessageId,
+        role: "assistant",
+      });
 
       const callbacks: StreamCallbacks = {
         onToken(text) {

@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     // TODO: Create new token with updated organizationId
     // For now, the frontend should call /api/auth/me after switching
     // to get updated user data, then update the token
-    
+
     return NextResponse.json({
       success: true,
       organizationId: body.organizationId,

@@ -29,20 +29,20 @@ curl http://localhost:3002/api/health
 
 ## Scripts
 
-| Command                       | Description                               |
-| ----------------------------- | ----------------------------------------- |
-| `pnpm dev`                    | Start development server (port 3002)     |
-| `pnpm build`                  | Build for production                      |
-| `pnpm start`                  | Start production server (port 3002)     |
-| `pnpm lint`                   | Run ESLint                                |
-| `pnpm format`                 | Format code with Prettier                 |
-| `pnpm db:up`                  | Start PostgreSQL (Docker)                |
-| `pnpm db:down`                | Stop PostgreSQL                           |
-| `pnpm db:generate`            | Generate Prisma client                    |
-| `pnpm db:push`                | Push schema to database (dev only)        |
-| `pnpm db:seed`                | Seed database with initial data           |
-| `pnpm db:studio`              | Open Prisma Studio                        |
-| `pnpm generate:secrets`       | Generate secure secrets for deployment    |
+| Command                 | Description                            |
+| ----------------------- | -------------------------------------- |
+| `pnpm dev`              | Start development server (port 3002)   |
+| `pnpm build`            | Build for production                   |
+| `pnpm start`            | Start production server (port 3002)    |
+| `pnpm lint`             | Run ESLint                             |
+| `pnpm format`           | Format code with Prettier              |
+| `pnpm db:up`            | Start PostgreSQL (Docker)              |
+| `pnpm db:down`          | Stop PostgreSQL                        |
+| `pnpm db:generate`      | Generate Prisma client                 |
+| `pnpm db:push`          | Push schema to database (dev only)     |
+| `pnpm db:seed`          | Seed database with initial data        |
+| `pnpm db:studio`        | Open Prisma Studio                     |
+| `pnpm generate:secrets` | Generate secure secrets for deployment |
 
 ### ⚠️ Database Migration Safety
 
@@ -93,12 +93,12 @@ puzzel-co-work/
 
 Copy `.env.example` to `.env.local` and configure:
 
-| Variable          | Description                          |
-| ----------------- | ------------------------------------ |
-| `DATABASE_URL`    | PostgreSQL connection string          |
-| `NEXTAUTH_SECRET` | JWT signing secret                   |
+| Variable          | Description                             |
+| ----------------- | --------------------------------------- |
+| `DATABASE_URL`    | PostgreSQL connection string            |
+| `NEXTAUTH_SECRET` | JWT signing secret                      |
 | `NEXTAUTH_URL`    | Application URL (http://localhost:3002) |
-| `ADMIN_PASSWORD`  | Admin user password (for seeding)    |
+| `ADMIN_PASSWORD`  | Admin user password (for seeding)       |
 
 ## Port Configuration
 

@@ -129,7 +129,9 @@ export const claudeAdapter: LLMProviderAdapter = {
       system: this.toProviderSystemPrompt(canonical.systemPrompt),
       messages: this.toProviderMessages(canonical.messages),
       tools:
-        canonical.tools.length > 0 ? this.toProviderTools(canonical.tools) : undefined,
+        canonical.tools.length > 0
+          ? this.toProviderTools(canonical.tools)
+          : undefined,
       tool_choice: canonical.toolChoice
         ? this.toProviderToolChoice(canonical.toolChoice)
         : undefined,
@@ -142,7 +144,13 @@ export const claudeAdapter: LLMProviderAdapter = {
   fromProviderResponse(response: unknown): CanonicalMessage {
     const r = response as {
       id?: string;
-      content?: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }>;
+      content?: Array<{
+        type: string;
+        text?: string;
+        id?: string;
+        name?: string;
+        input?: Record<string, unknown>;
+      }>;
       model?: string;
       usage?: { input_tokens: number; output_tokens: number };
       stop_reason?: string;
@@ -170,7 +178,9 @@ export const claudeAdapter: LLMProviderAdapter = {
           r.usage != null
             ? { input: r.usage.input_tokens, output: r.usage.output_tokens }
             : undefined,
-        stopReason: r.stop_reason ? mapClaudeStopReason(r.stop_reason) : undefined,
+        stopReason: r.stop_reason
+          ? mapClaudeStopReason(r.stop_reason)
+          : undefined,
       },
     };
   },
@@ -180,7 +190,9 @@ export const claudeAdapter: LLMProviderAdapter = {
   },
 
   normaliseError(error: unknown): CanonicalError {
-    const e = error as { status?: number; code?: string; message?: string } | undefined;
+    const e = error as
+      | { status?: number; code?: string; message?: string }
+      | undefined;
     const message = e?.message ?? String(error);
     const code = e?.code ?? (e?.status === 429 ? "rate_limit" : "unknown");
     return {

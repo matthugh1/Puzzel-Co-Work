@@ -51,10 +51,7 @@ export async function GET(request: Request, context: RouteContext) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     // 6. Look up file record in DB
@@ -63,10 +60,7 @@ export async function GET(request: Request, context: RouteContext) {
     });
 
     if (!fileRecord) {
-      return NextResponse.json(
-        { error: "File not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
     // 7. Read file from disk
@@ -75,16 +69,22 @@ export async function GET(request: Request, context: RouteContext) {
     // Security: ensure the file path is within the session storage directory
     const sessionDir = path.join(process.cwd(), "storage", "sessions", id);
     const resolvedPath = path.resolve(filePath);
-    if (!resolvedPath.startsWith(sessionDir)) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 },
-      );
+    if (!resolvedPath.startsWith(path.resolve(sessionDir))) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    let fileContent: string;
+    const mimeType = fileRecord.mimeType || "application/octet-stream";
+    const isBinary =
+      mimeType.startsWith("application/vnd.") ||
+      mimeType === "application/octet-stream" ||
+      mimeType.includes("pdf") ||
+      mimeType.includes("image/");
+
+    let body: string | Buffer;
     try {
-      fileContent = await fs.readFile(resolvedPath, "utf-8");
+      body = isBinary
+        ? await fs.readFile(resolvedPath)
+        : await fs.readFile(resolvedPath, "utf-8");
     } catch {
       return NextResponse.json(
         { error: "File not found on disk" },
@@ -92,13 +92,18 @@ export async function GET(request: Request, context: RouteContext) {
       );
     }
 
-    // 8. Return file with correct content type
-    return new Response(fileContent, {
+    const contentLength =
+      typeof body === "string" ? Buffer.byteLength(body, "utf-8") : body.length;
+
+    // 8. Return file with correct content type (Response accepts string or Uint8Array, not Buffer)
+    const responseBody: BodyInit =
+      typeof body === "string" ? body : new Uint8Array(body);
+    return new Response(responseBody, {
       status: 200,
       headers: {
-        "Content-Type": fileRecord.mimeType || "application/octet-stream",
-        "Content-Length": String(Buffer.byteLength(fileContent, "utf-8")),
-        "Content-Disposition": `inline; filename="${filename}"`,
+        "Content-Type": mimeType,
+        "Content-Length": String(contentLength),
+        "Content-Disposition": `attachment; filename="${filename}"`,
         "Cache-Control": "private, max-age=3600",
       },
     });

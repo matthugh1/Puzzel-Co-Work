@@ -6,10 +6,11 @@ import type { CoworkSession } from "@/types/cowork";
 import {
   IconPlus,
   IconMenu,
-  IconMessageSquare,
   IconSettings,
   IconTrash,
-  IconPackage,
+  IconZap,
+  IconWrench,
+  IconList,
 } from "@/components/cowork/icons";
 
 interface CoworkSidebarProps {
@@ -20,6 +21,7 @@ interface CoworkSidebarProps {
   onNewTask: () => void;
   onSelectSession: (id: string) => void;
   onDeleteSession: (id: string) => void;
+  onOpenCreateSkill?: () => void;
 }
 
 export function CoworkSidebar({
@@ -30,6 +32,7 @@ export function CoworkSidebar({
   onNewTask,
   onSelectSession,
   onDeleteSession,
+  onOpenCreateSkill,
 }: CoworkSidebarProps) {
   const router = useRouter();
   const [contextMenu, setContextMenu] = useState<string | null>(null);
@@ -64,7 +67,9 @@ export function CoworkSidebar({
   };
 
   return (
-    <aside className={`cowork-sidebar ${isOpen ? "cowork-sidebar--open" : "cowork-sidebar--collapsed"}`}>
+    <aside
+      className={`cowork-sidebar ${isOpen ? "cowork-sidebar--open" : "cowork-sidebar--collapsed"}`}
+    >
       {/* Header */}
       <div className="cowork-sidebar__header">
         <button
@@ -89,7 +94,14 @@ export function CoworkSidebar({
       <div className="cowork-sidebar__section-title">Recent</div>
       <div className="cowork-sidebar__list">
         {sessions.length === 0 ? (
-          <div style={{ padding: "16px 10px", fontSize: "0.8125rem", color: "var(--cw-sidebar-text-muted)", textAlign: "center" }}>
+          <div
+            style={{
+              padding: "16px 10px",
+              fontSize: "0.8125rem",
+              color: "var(--cw-sidebar-text-muted)",
+              textAlign: "center",
+            }}
+          >
             No sessions yet
           </div>
         ) : (
@@ -97,13 +109,23 @@ export function CoworkSidebar({
             <div key={session.id} style={{ position: "relative" }}>
               <button
                 className={`cowork-sidebar__item ${
-                  activeSessionId === session.id ? "cowork-sidebar__item--active" : ""
+                  activeSessionId === session.id
+                    ? "cowork-sidebar__item--active"
+                    : ""
                 }`}
                 onClick={() => onSelectSession(session.id)}
                 onContextMenu={(e) => handleContextMenu(e, session.id)}
                 title={session.title}
               >
-                <span style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0, flex: 1 }}>
+                <span
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    minWidth: 0,
+                    flex: 1,
+                  }}
+                >
                   <span
                     style={{
                       width: 7,
@@ -113,11 +135,20 @@ export function CoworkSidebar({
                       flexShrink: 0,
                     }}
                   />
-                  <span className="cowork-sidebar__item-text" style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <span
+                    className="cowork-sidebar__item-text"
+                    style={{ overflow: "hidden", textOverflow: "ellipsis" }}
+                  >
                     {session.title}
                   </span>
                 </span>
-                <span style={{ fontSize: "0.6875rem", color: "var(--cw-sidebar-text-muted)", flexShrink: 0 }}>
+                <span
+                  style={{
+                    fontSize: "0.6875rem",
+                    color: "var(--cw-sidebar-text-muted)",
+                    flexShrink: 0,
+                  }}
+                >
                   {formatTime(session.updatedAt)}
                 </span>
               </button>
@@ -138,7 +169,12 @@ export function CoworkSidebar({
                 >
                   <button
                     className="cowork-sidebar__item"
-                    style={{ color: "#ef4444", padding: "6px 10px", fontSize: "0.8125rem", gap: "8px" }}
+                    style={{
+                      color: "#ef4444",
+                      padding: "6px 10px",
+                      fontSize: "0.8125rem",
+                      gap: "8px",
+                    }}
                     onClick={() => {
                       onDeleteSession(session.id);
                       setContextMenu(null);
@@ -154,13 +190,51 @@ export function CoworkSidebar({
         )}
       </div>
 
+      {/* Skills & Tools */}
+      <div className="cowork-sidebar__section-title">Extensions</div>
+      <div className="cowork-sidebar__list" style={{ marginBottom: 8 }}>
+        <button
+          className="cowork-sidebar__item"
+          onClick={() =>
+            onOpenCreateSkill
+              ? onOpenCreateSkill()
+              : router.push("/cowork/skills")
+          }
+          title="Create a skill in chat"
+        >
+          <IconZap size={16} />
+          <span className="cowork-sidebar__footer-text">New Skill</span>
+        </button>
+        <button
+          className="cowork-sidebar__item"
+          onClick={() =>
+            router.push(
+              activeSessionId
+                ? `/cowork/skills?sessionId=${encodeURIComponent(activeSessionId)}`
+                : "/cowork/skills",
+            )
+          }
+          title="View built-in and custom skills"
+        >
+          <IconList size={16} />
+          <span className="cowork-sidebar__footer-text">Skills</span>
+        </button>
+        <button
+          className="cowork-sidebar__item"
+          onClick={() => router.push("/cowork/settings?tab=tools")}
+          title="Add MCP or connector tools"
+        >
+          <IconWrench size={16} />
+          <span className="cowork-sidebar__footer-text">New Tool</span>
+        </button>
+      </div>
+
       {/* Footer */}
       <div className="cowork-sidebar__footer">
-        <button className="cowork-sidebar__item" style={{ opacity: 0.5 }} disabled>
-          <IconPackage size={16} />
-          <span className="cowork-sidebar__footer-text">Plugins</span>
-        </button>
-        <button className="cowork-sidebar__item" onClick={() => router.push("/cowork/settings")}>
+        <button
+          className="cowork-sidebar__item"
+          onClick={() => router.push("/cowork/settings")}
+        >
           <IconSettings size={16} />
           <span className="cowork-sidebar__footer-text">Settings</span>
         </button>

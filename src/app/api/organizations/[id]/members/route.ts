@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { validateCSRFToken } from "@/lib/csrf";
-import { checkAuthWithPermission, PERMISSIONS, isAdmin } from "@/lib/permissions";
+import {
+  checkAuthWithPermission,
+  PERMISSIONS,
+  isAdmin,
+} from "@/lib/permissions";
 import { getUserFromRequest } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import {
@@ -10,10 +14,7 @@ import {
 } from "@/lib/validation";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
-import {
-  isOrganizationMember,
-  isOrganizationAdmin,
-} from "@/lib/organization";
+import { isOrganizationMember, isOrganizationAdmin } from "@/lib/organization";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -191,13 +192,7 @@ export async function POST(
     });
 
     // 6. Audit logging
-    await audit.memberAdded(
-      id,
-      body.userId,
-      user.id,
-      { roleId },
-      request,
-    );
+    await audit.memberAdded(id, body.userId, user.id, { roleId }, request);
 
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {

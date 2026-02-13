@@ -10,14 +10,14 @@ export const PERMISSIONS = {
   // User permissions
   USERS_READ: "users:read",
   USERS_ADMIN: "users:admin",
-  
+
   // Organization permissions
   ORGANIZATIONS_CREATE: "organizations:create", // Global admin only
   ORGANIZATIONS_READ: "organizations:read",
   ORGANIZATIONS_UPDATE: "organizations:update",
   ORGANIZATIONS_ADMIN: "organizations:admin", // Manage org settings
   ORGANIZATIONS_MANAGE_MEMBERS: "organizations:manage_members", // Add/remove members
-  
+
   // Audit permissions
   AUDIT_READ: "audit:read",
 } as const;

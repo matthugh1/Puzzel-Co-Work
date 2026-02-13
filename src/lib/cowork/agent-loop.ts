@@ -18,7 +18,9 @@ import {
   pushToolResultToMessages,
   type ToolExecutionFlags,
 } from "./tool-execution";
+import { db } from "@/lib/db";
 import { loadSessionSkills } from "./skills";
+import { getSessionSubAgents } from "./sub-agent";
 // Skill parser is used by components (SkillDraftCard, CoworkMessageItem) — not needed here.
 
 const MAX_TOOL_ITERATIONS = 25;
@@ -36,24 +38,43 @@ function appendSessionState(
   const stateParts: string[] = [];
 
   if (sessionState.todos && sessionState.todos.length > 0) {
-    const pendingTodos = sessionState.todos.filter((t) => t.status === "pending" || t.status === "in_progress");
+    const pendingTodos = sessionState.todos.filter(
+      (t) => t.status === "pending" || t.status === "in_progress",
+    );
     if (pendingTodos.length > 0) {
-      stateParts.push(`\n\nCurrent tasks:\n${pendingTodos.map((t) => `- ${t.content} (${t.status})`).join("\n")}`);
+      stateParts.push(
+        `\n\nCurrent tasks:\n${pendingTodos.map((t) => `- ${t.content} (${t.status})`).join("\n")}`,
+      );
     }
   }
 
   if (sessionState.files && sessionState.files.length > 0) {
     const outputs = sessionState.files.filter((f) => f.category === "output");
     if (outputs.length > 0) {
-      stateParts.push(`\n\nGenerated files:\n${outputs.map((f) => `- ${f.fileName}`).join("\n")}`);
+      stateParts.push(
+        `\n\nGenerated files:\n${outputs.map((f) => `- ${f.fileName}`).join("\n")}`,
+      );
     }
   }
 
   if (sessionState.subAgents && sessionState.subAgents.length > 0) {
-    const activeAgents = sessionState.subAgents.filter((a) => a.status === "running");
+    const activeAgents = sessionState.subAgents.filter(
+      (a) => a.status === "running",
+    );
     if (activeAgents.length > 0) {
-      stateParts.push(`\n\nActive sub-agents:\n${activeAgents.map((a) => `- ${a.description} (${a.status})`).join("\n")}`);
+      stateParts.push(
+        `\n\nActive sub-agents:\n${activeAgents.map((a) => `- ${a.description} (${a.status})`).join("\n")}`,
+      );
     }
+  }
+
+  if (
+    sessionState.sessionFeedback &&
+    sessionState.sessionFeedback.some((f) => f.rating === "negative")
+  ) {
+    stateParts.push(
+      "\n\nUser feedback:\nThe user has flagged issues with some of your previous responses in this session. Take extra care to be accurate and address their concerns.",
+    );
   }
 
   if (stateParts.length > 0) {
@@ -79,11 +100,22 @@ Key behaviours:
 - Ask clarifying questions when the request is ambiguous.
 - Be honest about limitations.
 
+Progress tracking (CRITICAL — you must follow this exactly):
+- For any task involving 2+ steps, call TodoWrite FIRST to create a plan before doing any work.
+- Each todo needs: content (imperative, e.g. "Run tests"), activeForm (present continuous, e.g. "Running tests"), status, and sortOrder.
+- When creating todos for the first time, use id: "" for each item.
+- TodoWrite returns the full list with database IDs. You MUST use these IDs in all subsequent calls.
+- WORKFLOW: Before EVERY tool call, call TodoWrite to mark the current item as in_progress. After EVERY tool call completes, call TodoWrite to mark it completed and the next item as in_progress. This means a typical step looks like: TodoWrite(mark step N in_progress) -> do the work -> TodoWrite(mark step N completed, step N+1 in_progress).
+- Each TodoWrite call MUST include ALL todos (the complete list), not just the ones that changed.
+- After ALL work is done, make a FINAL TodoWrite call marking everything as completed.
+- Only skip TodoWrite for simple conversational replies with no tool calls.
+
 Using custom skills (IMPORTANT):
 When a user's message matches one of your Available Custom Skills (listed at the end of this prompt), you MUST call the Skill tool with that skill's name BEFORE doing anything else. The Skill tool will return the skill's detailed instructions — follow them precisely.
 - Do NOT try to handle the request yourself if a matching skill exists — call the Skill tool first.
 - Do NOT call CreateDocument when a skill should be used instead.
 - If unsure whether a skill applies, call the Skill tool — the returned instructions will clarify.
+- If a skill's instructions contain {{parameter_name}} placeholders and you do not yet have values, call AskUserQuestion to collect them from the user first, then call the Skill tool again with paramValues set to the collected values.
 
 Creating skills (IMPORTANT — read carefully):
 When a user asks to create, build, or make a "skill", they want a reusable AI prompt template — NOT a document. Follow this process strictly:
@@ -141,10 +173,16 @@ function summariseAgentMessages(messages: AgentMessage[]): string {
   return messages
     .map((m) => {
       if (m.role === "tool") return "tool";
-      if (typeof m.content === "string") return `${m.role}(${m.content.length})`;
-      if (m.content === null && "tool_calls" in m) return `assistant(tool_calls:${(m as { tool_calls: unknown[] }).tool_calls?.length ?? 0})`;
+      if (typeof m.content === "string")
+        return `${m.role}(${m.content.length})`;
+      if (m.content === null && "tool_calls" in m)
+        return `assistant(tool_calls:${(m as { tool_calls: unknown[] }).tool_calls?.length ?? 0})`;
       if (Array.isArray(m.content)) {
-        const types = m.content.map((c) => (typeof c === "object" && c !== null && "type" in c ? (c as { type: string }).type : "?"));
+        const types = m.content.map((c) =>
+          typeof c === "object" && c !== null && "type" in c
+            ? (c as { type: string }).type
+            : "?",
+        );
         return `${m.role}[${types.join(",")}]`;
       }
       return m.role;
@@ -174,9 +212,15 @@ function getLastUserMessageText(messages: AgentMessage[]): string | undefined {
       if (Array.isArray(m.content)) {
         const textBlock = m.content.find(
           (c): c is { type: "text"; text: string } =>
-            typeof c === "object" && c !== null && "type" in c && (c as { type: string }).type === "text" && "text" in c,
+            typeof c === "object" &&
+            c !== null &&
+            "type" in c &&
+            (c as { type: string }).type === "text" &&
+            "text" in c,
         );
-        return textBlock && typeof textBlock.text === "string" ? textBlock.text : undefined;
+        return textBlock && typeof textBlock.text === "string"
+          ? textBlock.text
+          : undefined;
       }
       return undefined;
     }
@@ -186,45 +230,71 @@ function getLastUserMessageText(messages: AgentMessage[]): string | undefined {
 
 /**
  * Truncate conversation history to fit within token limits
- * Keeps last 20 full messages, summarises older ones
+ * Keeps last 20 full messages, summarises older ones.
+ * Does not split tool call/result pairs: if the recent window would start with a
+ * tool result, we extend left to include the preceding assistant message.
  */
 function truncateHistory(
   messages: AgentMessage[],
-  maxTokens: number,
+  _maxTokens: number,
 ): AgentMessage[] {
   if (messages.length === 0) return messages;
 
-  // Keep last 20 messages fully
   const keepCount = 20;
   if (messages.length <= keepCount) {
     return messages;
   }
 
-  const recentMessages = messages.slice(-keepCount);
-  const oldMessages = messages.slice(0, -keepCount);
+  let recentStart = messages.length - keepCount;
+  // Do not start the recent window with a tool result (orphan); keep tool_use + tool_result pairs intact
+  while (
+    recentStart < messages.length &&
+    (messages[recentStart] as { role: string }).role === "tool"
+  ) {
+    recentStart--;
+  }
+  recentStart = Math.max(0, recentStart);
+
+  const recentMessages = messages.slice(recentStart);
+  const oldMessages = messages.slice(0, recentStart);
 
   // Summarise old messages
   const summaryText = `[Previous conversation summary: ${oldMessages.length} messages about various topics. User and assistant discussed tasks, used tools, and made progress.]`;
 
   // Drop tool call/result details from old messages, keep brief summaries
   const simplifiedOld: AgentMessage[] = oldMessages
-    .filter((m): m is AgentMessage => m.role === "user" || m.role === "assistant")
+    .filter(
+      (m): m is AgentMessage => m.role === "user" || m.role === "assistant",
+    )
     .map((m): AgentMessage => {
       if (typeof m.content === "string") {
         // Truncate long text messages
-        const truncated = m.content.length > 500 ? m.content.substring(0, 500) + "..." : m.content;
+        const truncated =
+          m.content.length > 500
+            ? m.content.substring(0, 500) + "..."
+            : m.content;
         return { role: m.role as "user" | "assistant", content: truncated };
       }
       // OpenAI assistant messages can have content: null when they only have tool_calls
       if (m.content == null || !Array.isArray(m.content)) {
-        return { role: m.role as "user" | "assistant", content: "Previous assistant message (tool use)" };
+        return {
+          role: m.role as "user" | "assistant",
+          content: "Previous assistant message (tool use)",
+        };
       }
       // For messages with tool_use/tool_result blocks, create a summary
-      const contentArray = m.content as Array<{ type: string; name?: string; [key: string]: unknown }>;
-      const toolUses = contentArray.filter((c) => c.type === "tool_use").map((c) => c.name || "tool");
-      const summary = toolUses.length > 0
-        ? `Used tools: ${toolUses.join(", ")}`
-        : "Previous assistant message";
+      const contentArray = m.content as Array<{
+        type: string;
+        name?: string;
+        [key: string]: unknown;
+      }>;
+      const toolUses = contentArray
+        .filter((c) => c.type === "tool_use")
+        .map((c) => c.name || "tool");
+      const summary =
+        toolUses.length > 0
+          ? `Used tools: ${toolUses.join(", ")}`
+          : "Previous assistant message";
       return { role: m.role as "user" | "assistant", content: summary };
     });
 
@@ -249,6 +319,8 @@ export interface AgentLoopConfig extends LLMStreamConfig {
     todos?: Array<{ id: string; content: string; status: string }>;
     files?: Array<{ fileName: string; category: string }>;
     subAgents?: Array<{ id: string; description: string; status: string }>;
+    /** Message feedback for agent awareness (negative = user flagged issues) */
+    sessionFeedback?: Array<{ rating: string }>;
   };
   activeSkills?: string[]; // Skill IDs to inject into system prompt
 }
@@ -258,7 +330,12 @@ export interface SSEEventSender {
 }
 
 export interface ArtifactCreator {
-  (filePath: string, fileName: string, content: string | undefined, sessionId: string): Promise<{
+  (
+    filePath: string,
+    fileName: string,
+    content: string | undefined,
+    sessionId: string,
+  ): Promise<{
     id: string;
     fileName: string;
     mimeType: string;
@@ -285,9 +362,15 @@ function nextCanonicalId(): string {
 /**
  * Convert agent loop messages (mixed Anthropic/OpenAI style) to canonical format for the LLM abstraction.
  */
-function agentMessagesToCanonical(messages: AgentMessage[]): CanonicalMessage[] {
+function agentMessagesToCanonical(
+  messages: AgentMessage[],
+): CanonicalMessage[] {
   const out: CanonicalMessage[] = [];
-  const toolResultBuffer: Array<{ toolUseId: string; content: string; isError: boolean }> = [];
+  const toolResultBuffer: Array<{
+    toolUseId: string;
+    content: string;
+    isError: boolean;
+  }> = [];
 
   function flushToolResults(): void {
     if (toolResultBuffer.length === 0) return;
@@ -326,7 +409,12 @@ function agentMessagesToCanonical(messages: AgentMessage[]): CanonicalMessage[] 
       } else if (Array.isArray(m.content)) {
         const blocks = m.content.map((c: unknown) => {
           if (typeof c === "object" && c !== null && "type" in c) {
-            const b = c as { type: string; tool_use_id?: string; content?: string; is_error?: boolean };
+            const b = c as {
+              type: string;
+              tool_use_id?: string;
+              content?: string;
+              is_error?: boolean;
+            };
             if (b.type === "tool_result" && b.tool_use_id != null) {
               return {
                 type: "tool_result" as const,
@@ -336,7 +424,10 @@ function agentMessagesToCanonical(messages: AgentMessage[]): CanonicalMessage[] 
               };
             }
             if (b.type === "text" && "text" in b) {
-              return { type: "text" as const, text: (b as { text: string }).text };
+              return {
+                type: "text" as const,
+                text: (b as { text: string }).text,
+              };
             }
           }
           return { type: "text" as const, text: JSON.stringify(c) };
@@ -353,27 +444,48 @@ function agentMessagesToCanonical(messages: AgentMessage[]): CanonicalMessage[] 
           role: "assistant",
           content: [{ type: "text", text: m.content }],
         });
-      } else if (m.content === null && "tool_calls" in m && Array.isArray(m.tool_calls)) {
-        const content = (m.tool_calls as Array<{ id?: string; function?: { name?: string; arguments?: string } }>).map(
-          (tc) => ({
-            type: "tool_use" as const,
-            id: tc.id ?? nextCanonicalId(),
-            name: tc.function?.name ?? "",
-            input: (() => {
-              try {
-                return JSON.parse(tc.function?.arguments ?? "{}") as Record<string, unknown>;
-              } catch {
-                return {};
-              }
-            })(),
-          })
-        );
+      } else if (
+        m.content === null &&
+        "tool_calls" in m &&
+        Array.isArray(m.tool_calls)
+      ) {
+        const content = (
+          m.tool_calls as Array<{
+            id?: string;
+            function?: { name?: string; arguments?: string };
+          }>
+        ).map((tc) => ({
+          type: "tool_use" as const,
+          id: tc.id ?? nextCanonicalId(),
+          name: tc.function?.name ?? "",
+          input: (() => {
+            try {
+              return JSON.parse(tc.function?.arguments ?? "{}") as Record<
+                string,
+                unknown
+              >;
+            } catch {
+              return {};
+            }
+          })(),
+        }));
         out.push({ id: nextCanonicalId(), role: "assistant", content });
       } else if (Array.isArray(m.content)) {
         const content = m.content.map((c: unknown) => {
-          const b = c as { type: string; id?: string; name?: string; input?: Record<string, unknown>; text?: string };
+          const b = c as {
+            type: string;
+            id?: string;
+            name?: string;
+            input?: Record<string, unknown>;
+            text?: string;
+          };
           if (b.type === "tool_use" && b.id != null && b.name != null) {
-            return { type: "tool_use" as const, id: b.id, name: b.name, input: b.input ?? {} };
+            return {
+              type: "tool_use" as const,
+              id: b.id,
+              name: b.name,
+              input: b.input ?? {},
+            };
           }
           if (b.type === "text" || "text" in b) {
             return { type: "text" as const, text: b.text ?? "" };
@@ -403,218 +515,267 @@ export async function runAgentLoop(
     // when a request matches — the tool returns full content and emits skill_activated SSE.
     // No trigger matching needed here.
 
-  let activeSkills = [...(config.activeSkills || [])];
-  const allCanonicalTools = getCanonicalTools();
+    let activeSkills = [...(config.activeSkills || [])];
+    const allCanonicalTools = getCanonicalTools();
 
-  const toolContext: ToolContext = {
-    sessionId: config.sessionId,
-    userId: config.userId,
-    organizationId: config.organizationId,
-    sessionDir: config.sessionDir,
-    planMode: config.planMode,
-    sendEvent, // Pass sendEvent to tools (e.g., Task tool for sub-agents)
-  };
-
-  let fullText = "";
-  let iterationCount = 0;
-  let totalUsage: TokenUsage | undefined;
-
-  // Filter tools based on plan mode and whether this is a sub-agent
-  // Sub-agents should NEVER have access to Task, AskUserQuestion, GetSubAgentResults, or Skill tools (prevent recursion)
-  const subAgentBlocklist = ["Task", "AskUserQuestion", "GetSubAgentResults", "Skill", "CreateSkill"];
-
-  let availableCanonicalTools: CanonicalToolDefinition[] = config.planMode
-    ? allCanonicalTools.filter((t) => ["Read", "Glob", "Grep", "WebSearch", "WebFetch"].includes(t.name))
-    : allCanonicalTools;
-
-  if (config.isSubAgent) {
-    availableCanonicalTools = availableCanonicalTools.filter((t) => !subAgentBlocklist.includes(t.name));
-  }
-
-  // Track completed sub-agents to inject their results
-  // Note: Sub-agent results are injected via sub_agent_update events handled by the frontend
-  // The main agent will see results when the user sends the next message (sessionState refreshed)
-  // For now, we rely on the sub-agent orchestrator to emit events that the frontend displays
-
-  console.log("[Agent Loop] Provider:", config.provider, "| tools:", availableCanonicalTools.length);
-
-  while (iterationCount < MAX_TOOL_ITERATIONS) {
-    iterationCount++;
-
-    // 1. Run provider-specific LLM iteration (unchanged — handles streaming)
-    const result =
-      config.provider === "anthropic"
-        ? await runAnthropicIteration(
-            messages,
-            { ...config, activeSkills },
-            availableCanonicalTools,
-            toolContext,
-            sendEvent,
-          )
-        : await runOpenAIIteration(
-            messages,
-            { ...config, activeSkills },
-            availableCanonicalTools,
-            toolContext,
-            sendEvent,
-          );
-
-    fullText += result.text;
-    if (result.usage) totalUsage = result.usage;
-
-    const toolNames = result.toolCalls.map((tc) => tc.name);
-    console.log(
-      "[Agent Loop] Iteration",
-      iterationCount,
-      "| toolCalls:",
-      toolNames.length ? toolNames.join(", ") : "(none)",
-    );
-
-    // 2. No tool calls? Check document follow-up or break
-    if (result.toolCalls.length === 0) {
-      if (
-        checkWantsDocumentFollowUp(
-          messages,
-          fullText,
-          iterationCount,
-          availableCanonicalTools.length > 0,
-          getLastUserMessageText,
-        )
-      ) {
-        fullText = "";
-        continue;
-      }
-      break;
-    }
-
-    // 3. Execute each tool call (shared logic)
-    const flags: ToolExecutionFlags = {
-      hadError: false,
-      createDocumentSucceeded: false,
-      createSkillFailed: false,
-      exitLoop: false,
+    const toolContext: ToolContext = {
+      sessionId: config.sessionId,
+      userId: config.userId,
+      organizationId: config.organizationId,
+      sessionDir: config.sessionDir,
+      planMode: config.planMode,
+      sendEvent, // Pass sendEvent to tools (e.g., Task tool for sub-agents)
     };
 
-    for (const toolCall of result.toolCalls) {
-      const perm = await handlePermissionCheck(
-        toolCall,
-        messages,
-        config.provider,
-        sendEvent,
-      );
-      if (!perm.allowed) {
-        if (perm.hadError) flags.hadError = true;
-        continue;
-      }
+    let fullText = "";
+    let iterationCount = 0;
+    let totalUsage: TokenUsage | undefined;
 
-      sendEvent("tool_use_start", {
-        id: toolCall.id,
-        name: toolCall.name,
-        input: toolCall.input,
-      });
+    // Filter tools based on plan mode and whether this is a sub-agent
+    // Sub-agents should NEVER have access to Task, AskUserQuestion, GetSubAgentResults, or Skill tools (prevent recursion)
+    const subAgentBlocklist = [
+      "Task",
+      "AskUserQuestion",
+      "GetSubAgentResults",
+      "Skill",
+      "CreateSkill",
+    ];
 
-      const toolInput = prepareToolInput(
-        toolCall,
-        result.text,
-        sendEvent,
-      );
+    let availableCanonicalTools: CanonicalToolDefinition[] = config.planMode
+      ? allCanonicalTools.filter((t) =>
+          ["Read", "Glob", "Grep", "WebSearch", "WebFetch"].includes(t.name),
+        )
+      : allCanonicalTools;
 
-      const toolResult = await executeTool(
-        toolCall.name,
-        toolInput,
-        toolContext,
-      );
-      if (toolResult.isError) flags.hadError = true;
-      if (toolCall.name === "CreateSkill" && toolResult.isError)
-        flags.createSkillFailed = true;
-      if (toolCall.name === "CreateDocument" && !toolResult.isError)
-        flags.createDocumentSucceeded = true;
-
-      sendEvent("tool_result", {
-        tool_use_id: toolCall.id,
-        content: toolResult.content,
-        is_error: toolResult.isError,
-      });
-      console.log(
-        "[Agent Loop] Tool executed provider=" +
-          config.provider +
-          " name=" +
-          toolCall.name +
-          " result=" +
-          (toolResult.isError ? "error" : "ok") +
-          " contentLen=" +
-          toolResult.content.length +
-          (toolResult.isError
-            ? " contentPreview=" + String(toolResult.content).slice(0, 80)
-            : ""),
-      );
-
-      await handleToolSideEffects(
-        toolCall,
-        toolResult,
-        flags,
-        config,
-        toolContext,
-        sendEvent,
-        activeSkills,
-      );
-      if (flags.exitLoop) break;
-
-      pushToolResultToMessages(
-        messages,
-        config.provider,
-        toolCall,
-        toolResult,
+    if (config.isSubAgent) {
+      availableCanonicalTools = availableCanonicalTools.filter(
+        (t) => !subAgentBlocklist.includes(t.name),
       );
     }
 
-    // 4. Post-tool handling
-    if (flags.hadError) {
-      console.log(
-        "[Agent Loop] Tool error occurred; one final text-only turn then ending. messageCount=" +
-          messages.length,
-      );
-      const finalResult =
+    const injectedSubAgentIds = new Set<string>();
+
+    console.log(
+      "[Agent Loop] Provider:",
+      config.provider,
+      "| tools:",
+      availableCanonicalTools.length,
+    );
+
+    while (iterationCount < MAX_TOOL_ITERATIONS) {
+      iterationCount++;
+
+      // 0. Auto-inject completed sub-agent results (parent session only)
+      if (!config.isSubAgent) {
+        try {
+          const agents = await getSessionSubAgents(config.sessionId);
+          const completed = agents.filter(
+            (a) =>
+              a.status === "completed" &&
+              a.result &&
+              !injectedSubAgentIds.has(a.id),
+          );
+          for (const a of completed) {
+            injectedSubAgentIds.add(a.id);
+            const syntheticContent = `[Sub-agent "${a.description}" completed.]\n\nResult:\n${a.result}`;
+            messages.push({ role: "user", content: syntheticContent });
+          }
+        } catch (err) {
+          console.error(
+            "[Agent Loop] Error checking completed sub-agents:",
+            err,
+          );
+        }
+      }
+
+      // 1. Run provider-specific LLM iteration (unchanged — handles streaming)
+      const result =
         config.provider === "anthropic"
           ? await runAnthropicIteration(
               messages,
               { ...config, activeSkills },
-              [],
+              availableCanonicalTools,
               toolContext,
               sendEvent,
             )
           : await runOpenAIIteration(
               messages,
               { ...config, activeSkills },
-              [],
+              availableCanonicalTools,
               toolContext,
               sendEvent,
             );
-      fullText += finalResult.text;
-      if (finalResult.usage) totalUsage = finalResult.usage;
-      break;
-    }
-    if (flags.createDocumentSucceeded || flags.exitLoop) {
-      if (flags.createDocumentSucceeded) {
-        console.log("[Agent Loop] CreateDocument succeeded; ending turn.");
+
+      fullText += result.text;
+      if (result.usage) totalUsage = result.usage;
+
+      const toolNames = result.toolCalls.map((tc) => tc.name);
+      console.log(
+        "[Agent Loop] Iteration",
+        iterationCount,
+        "| toolCalls:",
+        toolNames.length ? toolNames.join(", ") : "(none)",
+      );
+
+      // 2. No tool calls? Check document follow-up or break
+      if (result.toolCalls.length === 0) {
+        if (
+          checkWantsDocumentFollowUp(
+            messages,
+            fullText,
+            iterationCount,
+            availableCanonicalTools.length > 0,
+            getLastUserMessageText,
+          )
+        ) {
+          fullText = "";
+          continue;
+        }
+        break;
       }
-      break;
+
+      // 3. Execute each tool call (shared logic)
+      const flags: ToolExecutionFlags = {
+        hadError: false,
+        createDocumentSucceeded: false,
+        createSkillFailed: false,
+        exitLoop: false,
+      };
+
+      for (const toolCall of result.toolCalls) {
+        const perm = await handlePermissionCheck(
+          toolCall,
+          messages,
+          config.provider,
+          sendEvent,
+          config.sessionId,
+        );
+        if (!perm.allowed) {
+          if (perm.hadError) flags.hadError = true;
+          continue;
+        }
+
+        sendEvent("tool_use_start", {
+          id: toolCall.id,
+          name: toolCall.name,
+          input: toolCall.input,
+        });
+
+        const toolInput = prepareToolInput(toolCall, result.text, sendEvent);
+
+        const toolResult = await executeTool(
+          toolCall.name,
+          toolInput,
+          toolContext,
+        );
+        if (toolResult.isError) flags.hadError = true;
+        if (toolCall.name === "CreateSkill" && toolResult.isError)
+          flags.createSkillFailed = true;
+        if (toolCall.name === "CreateDocument" && !toolResult.isError)
+          flags.createDocumentSucceeded = true;
+
+        sendEvent("tool_result", {
+          tool_use_id: toolCall.id,
+          content: toolResult.content,
+          is_error: toolResult.isError,
+        });
+        console.log(
+          "[Agent Loop] Tool executed provider=" +
+            config.provider +
+            " name=" +
+            toolCall.name +
+            " result=" +
+            (toolResult.isError ? "error" : "ok") +
+            " contentLen=" +
+            toolResult.content.length +
+            (toolResult.isError
+              ? " contentPreview=" + String(toolResult.content).slice(0, 80)
+              : ""),
+        );
+
+        await handleToolSideEffects(
+          toolCall,
+          toolResult,
+          flags,
+          config,
+          toolContext,
+          sendEvent,
+          activeSkills,
+        );
+        if (flags.exitLoop) break;
+
+        pushToolResultToMessages(
+          messages,
+          config.provider,
+          toolCall,
+          toolResult,
+        );
+      }
+
+      // 4. Post-tool handling
+      if (flags.hadError) {
+        console.log(
+          "[Agent Loop] Tool error occurred; one final text-only turn then ending. messageCount=" +
+            messages.length,
+        );
+        const finalResult =
+          config.provider === "anthropic"
+            ? await runAnthropicIteration(
+                messages,
+                { ...config, activeSkills },
+                [],
+                toolContext,
+                sendEvent,
+              )
+            : await runOpenAIIteration(
+                messages,
+                { ...config, activeSkills },
+                [],
+                toolContext,
+                sendEvent,
+              );
+        fullText += finalResult.text;
+        if (finalResult.usage) totalUsage = finalResult.usage;
+        break;
+      }
+      if (flags.createDocumentSucceeded || flags.exitLoop) {
+        if (flags.createDocumentSucceeded) {
+          console.log("[Agent Loop] CreateDocument succeeded; ending turn.");
+        }
+        break;
+      }
     }
-  }
 
     if (iterationCount >= MAX_TOOL_ITERATIONS) {
-      console.log("[Agent Loop] Exit reason=max_iterations iterationCount=" + iterationCount);
+      console.log(
+        "[Agent Loop] Exit reason=max_iterations iterationCount=" +
+          iterationCount,
+      );
       sendEvent("error", {
         code: "max_iterations",
         message: `Reached maximum tool call iterations (${MAX_TOOL_ITERATIONS})`,
       });
     } else {
-      console.log("[Agent Loop] Done iterationCount=" + iterationCount + " fullTextLen=" + fullText.length + (totalUsage ? " inputTokens=" + totalUsage.inputTokens + " outputTokens=" + totalUsage.outputTokens : ""));
+      console.log(
+        "[Agent Loop] Done iterationCount=" +
+          iterationCount +
+          " fullTextLen=" +
+          fullText.length +
+          (totalUsage
+            ? " inputTokens=" +
+              totalUsage.inputTokens +
+              " outputTokens=" +
+              totalUsage.outputTokens
+            : ""),
+      );
     }
 
     return { fullText, usage: totalUsage };
   } catch (error) {
-    const adapter = config.provider === "anthropic" ? getAdapter("anthropic") : getAdapter("openai");
+    const adapter =
+      config.provider === "anthropic"
+        ? getAdapter("anthropic")
+        : getAdapter("openai");
     const normalised = adapter.normaliseError(error);
     console.error("[Run Agent Loop] Fatal error:", error);
     sendEvent("error", { code: normalised.code, message: normalised.message });
@@ -624,7 +785,11 @@ export async function runAgentLoop(
 
 interface AnthropicIterationResult {
   text: string;
-  toolCalls: Array<{ id: string; name: string; input: Record<string, unknown> }>;
+  toolCalls: Array<{
+    id: string;
+    name: string;
+    input: Record<string, unknown>;
+  }>;
   usage?: TokenUsage;
 }
 
@@ -663,7 +828,7 @@ async function runAnthropicIteration(
 
   const toolNames = canonicalTools.map((t) => t.name);
   console.log(
-    `${LLM_LOG_PREFIX} Request provider=anthropic model=${config.model} messages=${canonicalMessages.length} systemChars=${systemPrompt.length} tools=[${toolNames.join(",")}] messageSummary=${summariseCanonicalMessages(canonicalMessages)}`
+    `${LLM_LOG_PREFIX} Request provider=anthropic model=${config.model} messages=${canonicalMessages.length} systemChars=${systemPrompt.length} tools=[${toolNames.join(",")}] messageSummary=${summariseCanonicalMessages(canonicalMessages)}`,
   );
 
   let stream;
@@ -671,13 +836,19 @@ async function runAnthropicIteration(
     stream = client.messages.stream(body as Anthropic.MessageCreateParams);
   } catch (error: unknown) {
     const normalised = adapter.normaliseError(error);
-    console.error(`${LLM_LOG_PREFIX} Request failed provider=anthropic error=${normalised.message}`);
+    console.error(
+      `${LLM_LOG_PREFIX} Request failed provider=anthropic error=${normalised.message}`,
+    );
     sendEvent("error", { code: normalised.code, message: normalised.message });
     throw new Error(normalised.message);
   }
 
   let text = "";
-  const toolCalls: Array<{ id: string; name: string; input: Record<string, unknown> }> = [];
+  const toolCalls: Array<{
+    id: string;
+    name: string;
+    input: Record<string, unknown>;
+  }> = [];
 
   // Stream text deltas
   stream.on("text", (delta) => {
@@ -717,14 +888,18 @@ async function runAnthropicIteration(
 
   const toolNamesOut = toolCalls.map((tc) => tc.name);
   console.log(
-    `${LLM_LOG_PREFIX} Response provider=anthropic textLen=${text.length} toolCalls=[${toolNamesOut.join(",") || "none"}] inputTokens=${usage.inputTokens} outputTokens=${usage.outputTokens}`
+    `${LLM_LOG_PREFIX} Response provider=anthropic textLen=${text.length} toolCalls=[${toolNamesOut.join(",") || "none"}] inputTokens=${usage.inputTokens} outputTokens=${usage.outputTokens}`,
   );
   return { text, toolCalls, usage };
 }
 
 interface OpenAIIterationResult {
   text: string;
-  toolCalls: Array<{ id: string; name: string; input: Record<string, unknown> }>;
+  toolCalls: Array<{
+    id: string;
+    name: string;
+    input: Record<string, unknown>;
+  }>;
   usage?: TokenUsage;
 }
 
@@ -756,7 +931,7 @@ async function runOpenAIIteration(
   const toolsForRequest = isReasoningModel ? [] : canonicalTools;
   if (isReasoningModel && canonicalTools.length > 0) {
     console.warn(
-      `[Agent Loop] Model ${config.model} does not support tool calling. Tools will be disabled for this session.`
+      `[Agent Loop] Model ${config.model} does not support tool calling. Tools will be disabled for this session.`,
     );
   }
 
@@ -765,7 +940,8 @@ async function runOpenAIIteration(
     systemPrompt,
     messages: canonicalMessages,
     tools: toolsForRequest,
-    toolChoice: toolsForRequest.length > 0 ? { type: "auto" as const } : undefined,
+    toolChoice:
+      toolsForRequest.length > 0 ? { type: "auto" as const } : undefined,
     maxTokens: config.maxTokens ?? 4096,
     temperature: isReasoningModel ? undefined : (config.temperature ?? 0.7),
     stream: true,
@@ -774,7 +950,7 @@ async function runOpenAIIteration(
 
   const toolNamesForLog = toolsForRequest.map((t) => t.name);
   console.log(
-    `${LLM_LOG_PREFIX} Request provider=openai model=${config.model} messages=${canonicalMessages.length} systemChars=${systemPrompt.length} tools=[${toolNamesForLog.join(",") || "none"}] toolChoice=${toolsForRequest.length > 0 ? "auto" : "none"} messageSummary=${summariseCanonicalMessages(canonicalMessages)}`
+    `${LLM_LOG_PREFIX} Request provider=openai model=${config.model} messages=${canonicalMessages.length} systemChars=${systemPrompt.length} tools=[${toolNamesForLog.join(",") || "none"}] toolChoice=${toolsForRequest.length > 0 ? "auto" : "none"} messageSummary=${summariseCanonicalMessages(canonicalMessages)}`,
   );
 
   let stream;
@@ -785,13 +961,18 @@ async function runOpenAIIteration(
     });
   } catch (error: unknown) {
     const normalised = adapter.normaliseError(error);
-    console.error(`${LLM_LOG_PREFIX} Request failed provider=openai error=${normalised.message}`);
+    console.error(
+      `${LLM_LOG_PREFIX} Request failed provider=openai error=${normalised.message}`,
+    );
     sendEvent("error", { code: normalised.code, message: normalised.message });
     throw new Error(normalised.message);
   }
 
   let text = "";
-  const toolCallMap = new Map<string, { id: string; name: string; arguments: string }>();
+  const toolCallMap = new Map<
+    string,
+    { id: string; name: string; arguments: string }
+  >();
   // OpenAI streams tool call deltas with `index` to identify which tool call they belong to.
   // The `id` is only present in the FIRST chunk; continuation chunks have id=undefined.
   // We must use `index` to map continuation chunks back to the correct tool call.
@@ -800,60 +981,60 @@ async function runOpenAIIteration(
 
   try {
     for await (const chunk of stream) {
-    const delta = chunk.choices[0]?.delta;
+      const delta = chunk.choices[0]?.delta;
 
-    if (delta?.content) {
-      text += delta.content;
-      sendEvent("content_delta", { text: delta.content });
-    }
+      if (delta?.content) {
+        text += delta.content;
+        sendEvent("content_delta", { text: delta.content });
+      }
 
-    if (delta?.tool_calls) {
-      for (const toolCallDelta of delta.tool_calls) {
-        const index = toolCallDelta.index;
-        const callId = toolCallDelta.id;
+      if (delta?.tool_calls) {
+        for (const toolCallDelta of delta.tool_calls) {
+          const index = toolCallDelta.index;
+          const callId = toolCallDelta.id;
 
-        if (callId) {
-          // First chunk for this tool call — has the id
-          const existing = toolCallMap.get(callId);
-          if (existing) {
-            existing.arguments += toolCallDelta.function?.arguments || "";
-            if (toolCallDelta.function?.name) {
-              existing.name = toolCallDelta.function.name;
-            }
-          } else {
-            toolCallMap.set(callId, {
-              id: callId,
-              name: toolCallDelta.function?.name || "",
-              arguments: toolCallDelta.function?.arguments || "",
-            });
-          }
-          // Track index → id so continuation chunks can find this tool call
-          if (index !== undefined) {
-            indexToIdMap.set(index, callId);
-          }
-        } else if (index !== undefined) {
-          // Continuation chunk — no id, use index to find the tool call
-          const existingId = indexToIdMap.get(index);
-          if (existingId) {
-            const existing = toolCallMap.get(existingId);
+          if (callId) {
+            // First chunk for this tool call — has the id
+            const existing = toolCallMap.get(callId);
             if (existing) {
               existing.arguments += toolCallDelta.function?.arguments || "";
               if (toolCallDelta.function?.name) {
                 existing.name = toolCallDelta.function.name;
               }
+            } else {
+              toolCallMap.set(callId, {
+                id: callId,
+                name: toolCallDelta.function?.name || "",
+                arguments: toolCallDelta.function?.arguments || "",
+              });
+            }
+            // Track index → id so continuation chunks can find this tool call
+            if (index !== undefined) {
+              indexToIdMap.set(index, callId);
+            }
+          } else if (index !== undefined) {
+            // Continuation chunk — no id, use index to find the tool call
+            const existingId = indexToIdMap.get(index);
+            if (existingId) {
+              const existing = toolCallMap.get(existingId);
+              if (existing) {
+                existing.arguments += toolCallDelta.function?.arguments || "";
+                if (toolCallDelta.function?.name) {
+                  existing.name = toolCallDelta.function.name;
+                }
+              }
             }
           }
         }
       }
-    }
 
-    if (chunk.usage) {
-      usage = {
-        inputTokens: chunk.usage.prompt_tokens,
-        outputTokens: chunk.usage.completion_tokens,
-      };
+      if (chunk.usage) {
+        usage = {
+          inputTokens: chunk.usage.prompt_tokens,
+          outputTokens: chunk.usage.completion_tokens,
+        };
+      }
     }
-  }
   } catch (error: unknown) {
     const normalised = adapter.normaliseError(error);
     sendEvent("error", { code: normalised.code, message: normalised.message });
@@ -861,7 +1042,11 @@ async function runOpenAIIteration(
   }
 
   // Convert accumulated tool calls to our format
-  const toolCalls: Array<{ id: string; name: string; input: Record<string, unknown> }> = [];
+  const toolCalls: Array<{
+    id: string;
+    name: string;
+    input: Record<string, unknown>;
+  }> = [];
   for (const [id, call] of toolCallMap) {
     try {
       toolCalls.push({
@@ -870,14 +1055,19 @@ async function runOpenAIIteration(
         input: JSON.parse(call.arguments || "{}"),
       });
     } catch (error) {
-      console.error(`[Agent Loop] Failed to parse tool call arguments for ${call.name}:`, error);
+      console.error(
+        `[Agent Loop] Failed to parse tool call arguments for ${call.name}:`,
+        error,
+      );
     }
   }
 
   const toolNamesOut = toolCalls.map((tc) => tc.name);
-  const usageStr = usage ? `inputTokens=${usage.inputTokens} outputTokens=${usage.outputTokens}` : "usage=unknown";
+  const usageStr = usage
+    ? `inputTokens=${usage.inputTokens} outputTokens=${usage.outputTokens}`
+    : "usage=unknown";
   console.log(
-    `${LLM_LOG_PREFIX} Response provider=openai textLen=${text.length} toolCalls=[${toolNamesOut.join(",") || "none"}] ${usageStr}`
+    `${LLM_LOG_PREFIX} Response provider=openai textLen=${text.length} toolCalls=[${toolNamesOut.join(",") || "none"}] ${usageStr}`,
   );
   return { text, toolCalls, usage };
 }
@@ -895,12 +1085,18 @@ export function streamAgentLoop(
   return new ReadableStream({
     async start(controller) {
       const send = (eventType: string, data: unknown) => {
-        const payload = JSON.stringify({ type: eventType, ...(typeof data === 'object' && data !== null ? data : { data }) });
+        const payload = JSON.stringify({
+          type: eventType,
+          ...(typeof data === "object" && data !== null ? data : { data }),
+        });
         controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
       };
 
       const assistantMessageId = `msg_${Date.now()}`;
-      send("message_start", { messageId: assistantMessageId, role: "assistant" });
+      send("message_start", {
+        messageId: assistantMessageId,
+        role: "assistant",
+      });
 
       try {
         // Convert simple messages to agent format
@@ -910,18 +1106,72 @@ export function streamAgentLoop(
         }));
 
         console.log(
-          "[Agent Loop] Start provider=" + config.provider + " model=" + (config.model ?? "default") + " messageCount=" + agentMessages.length + " summary=" + summariseAgentMessages(agentMessages)
+          "[Agent Loop] Start provider=" +
+            config.provider +
+            " model=" +
+            (config.model ?? "default") +
+            " messageCount=" +
+            agentMessages.length +
+            " summary=" +
+            summariseAgentMessages(agentMessages),
         );
         const result = await runAgentLoop(agentMessages, config, send);
+
+        // Auto-complete remaining todos — safety net when the agent didn't mark all completed
+        if (config.sessionId) {
+          try {
+            const remainingTodos = await db.coworkTodoItem.findMany({
+              where: {
+                sessionId: config.sessionId,
+                status: "IN_PROGRESS",
+              },
+            });
+
+            if (remainingTodos.length > 0) {
+              await db.coworkTodoItem.updateMany({
+                where: {
+                  sessionId: config.sessionId,
+                  status: "IN_PROGRESS",
+                },
+                data: { status: "COMPLETED" },
+              });
+
+              const allTodos = await db.coworkTodoItem.findMany({
+                where: { sessionId: config.sessionId },
+                orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+              });
+
+              send("todo_update", {
+                todos: allTodos.map((t) => ({
+                  id: t.id,
+                  sessionId: t.sessionId,
+                  content: t.content,
+                  activeForm: t.activeForm,
+                  status: t.status.toLowerCase(),
+                  createdAt: t.createdAt.toISOString(),
+                  updatedAt: t.updatedAt.toISOString(),
+                })),
+              });
+            }
+          } catch (err) {
+            console.error("[Agent Loop] Error auto-completing todos:", err);
+          }
+        }
 
         send("message_end", {
           messageId: assistantMessageId,
           tokenUsage: result.usage
-            ? { input: result.usage.inputTokens, output: result.usage.outputTokens }
+            ? {
+                input: result.usage.inputTokens,
+                output: result.usage.outputTokens,
+              }
             : undefined,
         });
       } catch (error) {
-        const adapter = config.provider === "anthropic" ? getAdapter("anthropic") : getAdapter("openai");
+        const adapter =
+          config.provider === "anthropic"
+            ? getAdapter("anthropic")
+            : getAdapter("openai");
         const normalised = adapter.normaliseError(error);
         console.error("[Stream Agent Loop] Error:", error);
         send("error", { code: normalised.code, message: normalised.message });

@@ -141,9 +141,7 @@ export default function NewUserPage() {
       // Redirect to user list
       router.push("/admin/users");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create user",
-      );
+      setError(err instanceof Error ? err.message : "Failed to create user");
       setLoading(false);
     }
   };

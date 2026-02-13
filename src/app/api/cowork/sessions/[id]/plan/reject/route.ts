@@ -62,10 +62,7 @@ export async function POST(request: Request, context: RouteContext) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     // 7. Parse request body
@@ -75,7 +72,7 @@ export async function POST(request: Request, context: RouteContext) {
     const plan = getPlan(planId);
     if (!plan || plan.sessionId !== id) {
       return NextResponse.json(
-        { error: "Plan not found" },
+        { error: "Plan not found or expired.", code: "PLAN_NOT_FOUND" },
         { status: 404 },
       );
     }

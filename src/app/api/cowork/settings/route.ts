@@ -112,11 +112,19 @@ export async function PUT(request: Request) {
     const settings = await db.coworkSettings.upsert({
       where: { organizationId: org.id },
       update: {
-        ...(parsed.defaultProvider !== undefined && { defaultProvider: parsed.defaultProvider }),
-        ...(parsed.defaultModel !== undefined && { defaultModel: parsed.defaultModel }),
-        ...(parsed.temperature !== undefined && { temperature: parsed.temperature }),
+        ...(parsed.defaultProvider !== undefined && {
+          defaultProvider: parsed.defaultProvider,
+        }),
+        ...(parsed.defaultModel !== undefined && {
+          defaultModel: parsed.defaultModel,
+        }),
+        ...(parsed.temperature !== undefined && {
+          temperature: parsed.temperature,
+        }),
         ...(parsed.maxTokens !== undefined && { maxTokens: parsed.maxTokens }),
-        ...(parsed.systemPrompt !== undefined && { systemPrompt: parsed.systemPrompt }),
+        ...(parsed.systemPrompt !== undefined && {
+          systemPrompt: parsed.systemPrompt,
+        }),
       },
       create: {
         organizationId: org.id,

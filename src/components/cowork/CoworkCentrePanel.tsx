@@ -49,7 +49,11 @@ export function CoworkCentrePanel({
     if (messagesEndRef.current) {
       const container = messagesEndRef.current.parentElement;
       if (container) {
-        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
+        const isNearBottom =
+          container.scrollHeight -
+            container.scrollTop -
+            container.clientHeight <
+          150;
         if (isNearBottom) {
           messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
         }
@@ -80,10 +84,10 @@ export function CoworkCentrePanel({
         if (res.ok) {
           const data = await res.json();
           const agents = data.agents || [];
-          
+
           if (agents.length > 0) {
             pollCount = 0; // Reset when agents found
-            
+
             // Update each agent in state
             agents.forEach((agent: SubAgent) => {
               dispatch({
@@ -93,7 +97,9 @@ export function CoworkCentrePanel({
             });
 
             // Check if still running
-            const stillRunning = agents.some((a: SubAgent) => a.status === "running");
+            const stillRunning = agents.some(
+              (a: SubAgent) => a.status === "running",
+            );
             return stillRunning;
           } else {
             pollCount++;
@@ -130,17 +136,21 @@ export function CoworkCentrePanel({
   // Inject sub-agent status block when agents are found
   useEffect(() => {
     if (!session) return;
-    
+
     const activeAgents = state.subAgents?.active || [];
     if (activeAgents.length === 0) return;
-    
+
     const currentMessages = state.chat.messages;
     const lastMessage = currentMessages[currentMessages.length - 1];
-    
+
     if (lastMessage && lastMessage.role === "assistant") {
-      const content = Array.isArray(lastMessage.content) ? lastMessage.content : [];
-      const hasStatusBlock = content.some((b: MessageContent) => b.type === "sub_agent_status");
-      
+      const content = Array.isArray(lastMessage.content)
+        ? lastMessage.content
+        : [];
+      const hasStatusBlock = content.some(
+        (b: MessageContent) => b.type === "sub_agent_status",
+      );
+
       if (!hasStatusBlock) {
         // Add status block to message
         const statusBlock: MessageContent = {
@@ -153,7 +163,7 @@ export function CoworkCentrePanel({
             maxTurns: a.maxTurns,
           })),
         };
-        
+
         dispatch({
           type: "UPDATE_LAST_MESSAGE",
           payload: {
@@ -174,7 +184,12 @@ export function CoworkCentrePanel({
   }, [state.chat.starterMessage]);
 
   const handleSendMessage = useCallback(
-    async (text: string, provider?: string, model?: string) => {
+    async (
+      text: string,
+      provider?: string,
+      model?: string,
+      skillHint?: string,
+    ) => {
       if (!session) return;
 
       // Optimistic user message
@@ -192,16 +207,24 @@ export function CoworkCentrePanel({
         const csrfRes = await fetch("/api/csrf-token");
         const csrfData = await csrfRes.json();
 
-        const body: Record<string, unknown> = { content: text, provider, model };
+        const body: Record<string, unknown> = {
+          content: text,
+          provider,
+          model,
+        };
+        if (skillHint) body.skillHint = skillHint;
 
-        const response = await fetch(`/api/cowork/sessions/${session.id}/messages`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": csrfData.token,
+        const response = await fetch(
+          `/api/cowork/sessions/${session.id}/messages`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRF-Token": csrfData.token,
+            },
+            body: JSON.stringify(body),
           },
-          body: JSON.stringify(body),
-        });
+        );
 
         if (!response.ok || !response.body) {
           throw new Error("Failed to send message");
@@ -223,7 +246,9 @@ export function CoworkCentrePanel({
             blocks.push({ type: "text", text: assistantText });
           }
           blocks.push(...contentBlocks);
-          return blocks.length > 0 ? blocks : [{ type: "text", text: "" }] as MessageContent[];
+          return blocks.length > 0
+            ? blocks
+            : ([{ type: "text", text: "" }] as MessageContent[]);
         };
 
         while (true) {
@@ -277,7 +302,8 @@ export function CoworkCentrePanel({
                 case "tool_result": {
                   const resultBlock: MessageContent = {
                     type: "tool_result",
-                    tool_use_id: data.tool_use_id || data.data?.tool_use_id || "",
+                    tool_use_id:
+                      data.tool_use_id || data.data?.tool_use_id || "",
                     content: data.content || data.data?.content || "",
                     is_error: data.is_error || data.data?.is_error || false,
                   };
@@ -352,11 +378,20 @@ export function CoworkCentrePanel({
                   const planBlock: MessageContent = {
                     type: "plan",
                     planId: plan.planId,
-                    steps: (plan.steps || []).map((s: { id?: string; description: string; status?: string }, i: number) => ({
-                      id: s.id || `step-${i}`,
-                      description: s.description,
-                      status: s.status || "pending",
-                    })),
+                    steps: (plan.steps || []).map(
+                      (
+                        s: {
+                          id?: string;
+                          description: string;
+                          status?: string;
+                        },
+                        i: number,
+                      ) => ({
+                        id: s.id || `step-${i}`,
+                        description: s.description,
+                        status: s.status || "pending",
+                      }),
+                    ),
                     status: "pending",
                   };
                   contentBlocks.push(planBlock);
@@ -378,15 +413,19 @@ export function CoworkCentrePanel({
                   const questionBlock: MessageContent = {
                     type: "ask_user",
                     questionId: question.id || question.questionId,
-                    questions: [{
-                      id: question.id || question.questionId,
-                      prompt: question.prompt,
-                      options: (question.options || []).map((opt: { id: string; label: string }) => ({
-                        id: opt.id,
-                        label: opt.label,
-                      })),
-                      allowMultiple: question.allowMultiple || false,
-                    }],
+                    questions: [
+                      {
+                        id: question.id || question.questionId,
+                        prompt: question.prompt,
+                        options: (question.options || []).map(
+                          (opt: { id: string; label: string }) => ({
+                            id: opt.id,
+                            label: opt.label,
+                          }),
+                        ),
+                        allowMultiple: question.allowMultiple || false,
+                      },
+                    ],
                   };
                   contentBlocks.push(questionBlock);
                   actions.updateLastMessage({ content: rebuildContent() });
@@ -397,10 +436,12 @@ export function CoworkCentrePanel({
                     payload: {
                       id: question.id || question.questionId,
                       prompt: question.prompt,
-                      options: (question.options || []).map((opt: { id: string; label: string }) => ({
-                        id: opt.id,
-                        label: opt.label,
-                      })),
+                      options: (question.options || []).map(
+                        (opt: { id: string; label: string }) => ({
+                          id: opt.id,
+                          label: opt.label,
+                        }),
+                      ),
                       allowMultiple: question.allowMultiple || false,
                     },
                   });
@@ -420,31 +461,42 @@ export function CoworkCentrePanel({
 
                 case "sub_agent_update": {
                   const agentUpdate = data.data || data;
-                  
+
                   // Create/update sub-agent object
                   const subAgent: SubAgent = {
                     id: agentUpdate.id,
                     parentSessionId: session.id,
                     description: agentUpdate.description || "",
-                    type: (agentUpdate.type || "general-purpose") as "bash" | "general-purpose" | "explore" | "plan",
-                    status: (agentUpdate.status || "running") as "running" | "completed" | "failed" | "cancelled",
+                    type: (agentUpdate.type || "general-purpose") as
+                      | "bash"
+                      | "general-purpose"
+                      | "explore"
+                      | "plan",
+                    status: (agentUpdate.status || "running") as
+                      | "running"
+                      | "completed"
+                      | "failed"
+                      | "cancelled",
                     prompt: agentUpdate.prompt || "",
                     result: agentUpdate.result,
                     model: agentUpdate.model,
-                    createdAt: agentUpdate.createdAt || new Date().toISOString(),
+                    createdAt:
+                      agentUpdate.createdAt || new Date().toISOString(),
                     completedAt: agentUpdate.completedAt,
                     turns: agentUpdate.turns || 0,
                     maxTurns: agentUpdate.maxTurns || 10,
                   };
-                  
+
                   // Update local tracking
                   activeSubAgents.set(subAgent.id, subAgent);
-                  
+
                   // Update global state
                   actions.updateSubAgent(subAgent);
 
                   // Find or create sub_agent_status block in message
-                  const statusBlockIndex = contentBlocks.findIndex((b) => b.type === "sub_agent_status");
+                  const statusBlockIndex = contentBlocks.findIndex(
+                    (b) => b.type === "sub_agent_status",
+                  );
                   const statusBlock: MessageContent = {
                     type: "sub_agent_status",
                     agents: Array.from(activeSubAgents.values()).map((a) => ({
@@ -455,7 +507,7 @@ export function CoworkCentrePanel({
                       maxTurns: a.maxTurns,
                     })),
                   };
-                  
+
                   if (statusBlockIndex >= 0) {
                     // Update existing block
                     contentBlocks[statusBlockIndex] = statusBlock;
@@ -463,7 +515,7 @@ export function CoworkCentrePanel({
                     // Add new block
                     contentBlocks.push(statusBlock);
                   }
-                  
+
                   actions.updateLastMessage({ content: rebuildContent() });
                   break;
                 }
@@ -482,6 +534,15 @@ export function CoworkCentrePanel({
 
                 case "message_end": {
                   // Streaming is complete
+                  break;
+                }
+
+                case "message_persisted": {
+                  // Server saved the assistant message; use the real DB id for feedback/history
+                  const dbMessageId = data.messageId || data.data?.messageId;
+                  if (dbMessageId) {
+                    actions.updateLastMessage({ id: dbMessageId });
+                  }
                   break;
                 }
 
@@ -510,7 +571,13 @@ export function CoworkCentrePanel({
           id: `error-${Date.now()}`,
           sessionId: session.id,
           role: "assistant",
-          content: [{ type: "error", code: "send_error", message: "Failed to get response. Please try again." }] as MessageContent[],
+          content: [
+            {
+              type: "error",
+              code: "send_error",
+              message: "Failed to get response. Please try again.",
+            },
+          ] as MessageContent[],
           createdAt: new Date().toISOString(),
         };
         actions.addMessage(errorMsg);
@@ -518,7 +585,7 @@ export function CoworkCentrePanel({
         actions.setStreaming(false);
       }
     },
-    [session, actions, dispatch]
+    [session, actions, dispatch],
   );
 
   const handleStop = useCallback(() => {
@@ -533,9 +600,12 @@ export function CoworkCentrePanel({
           <div className="cowork-empty-state__icon">
             <IconRocket size={28} />
           </div>
-          <div className="cowork-empty-state__title">What would you like to do?</div>
+          <div className="cowork-empty-state__title">
+            What would you like to do?
+          </div>
           <div className="cowork-empty-state__description">
-            Start a new task and your AI agent will help you plan, execute, and deliver results.
+            Start a new task and your AI agent will help you plan, execute, and
+            deliver results.
           </div>
           <div className="cowork-empty-state__suggestions">
             <button className="cowork-empty-state__suggestion">
@@ -557,6 +627,7 @@ export function CoworkCentrePanel({
           disabled
           onSend={() => {}}
           onStop={() => {}}
+          sessionId={undefined}
         />
       </div>
     );
@@ -583,14 +654,21 @@ export function CoworkCentrePanel({
         >
           <IconList size={16} />
           <span>
-            Plan mode: only read-only tools (Read, Glob, Grep, WebSearch, WebFetch) are available.
-            Approve a plan to continue with full tools.
+            Plan mode: only read-only tools (Read, Glob, Grep, WebSearch,
+            WebFetch) are available. Approve a plan to continue with full tools.
           </span>
         </div>
       )}
       {/* Header */}
       <div className="cowork-centre__header">
-        <div style={{ display: "flex", alignItems: "center", gap: 8, height: "100%" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            height: "100%",
+          }}
+        >
           <button
             className="cowork-input__btn"
             onClick={onToggleSidebar}
@@ -600,11 +678,16 @@ export function CoworkCentrePanel({
             <IconMenu size={18} />
           </button>
           <div className="cowork-centre__tabs">
-            <span className="cowork-centre__tab cowork-centre__tab--active" style={{ cursor: "default" }}>
+            <span
+              className="cowork-centre__tab cowork-centre__tab--active"
+              style={{ cursor: "default" }}
+            >
               <IconMessageSquare size={14} />
               Chat
               {messages.length > 0 && (
-                <span className="cowork-centre__tab-badge">{messages.length}</span>
+                <span className="cowork-centre__tab-badge">
+                  {messages.length}
+                </span>
               )}
             </span>
           </div>
@@ -623,37 +706,54 @@ export function CoworkCentrePanel({
 
       {/* Content */}
       <>
-          <div className="cowork-messages">
-            {messages.length === 0 ? (
-              <EmptyStateWidget onOpenCapabilities={() => setCapabilitiesOpen(true)} />
-            ) : (
-              messages.map((msg) => (
-                <CoworkMessageItem key={msg.id} message={msg} />
-              ))
-            )}
+        <div className="cowork-messages">
+          {messages.length === 0 ? (
+            <EmptyStateWidget
+              onOpenCapabilities={() => setCapabilitiesOpen(true)}
+            />
+          ) : (
+            messages.map((msg) => (
+              <CoworkMessageItem key={msg.id} message={msg} />
+            ))
+          )}
 
-            {isStreaming && (
-              <div className="cowork-streaming">
-                <div className="cowork-streaming-indicator">
-                  <div className="cowork-streaming-indicator__dot" />
-                  <div className="cowork-streaming-indicator__dot" />
-                  <div className="cowork-streaming-indicator__dot" />
+          {isStreaming &&
+            messages.length > 0 &&
+            messages[messages.length - 1]?.role === "user" && (
+              <div className="cowork-message cowork-message--assistant">
+                <div className="cowork-message__avatar cowork-message__avatar--assistant">
+                  C
                 </div>
-                <span>Cowork is thinking...</span>
+                <div className="cw-thinking-indicator">
+                  <div className="cw-thinking-dots">
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                  Thinking...
+                </div>
               </div>
             )}
 
-            <div ref={messagesEndRef} />
-          </div>
+          <div ref={messagesEndRef} />
+        </div>
 
-          <CoworkInputArea
-            isStreaming={isStreaming}
-            onSend={handleSendMessage}
-            onStop={handleStop}
-            defaultProvider={settings?.defaultProvider}
-            defaultModel={settings?.defaultModel || session.model || "claude-sonnet-4-20250514"}
-          />
-          <CapabilitiesPanel isOpen={capabilitiesOpen} onClose={() => setCapabilitiesOpen(false)} />
+        <CoworkInputArea
+          isStreaming={isStreaming}
+          onSend={handleSendMessage}
+          onStop={handleStop}
+          defaultProvider={settings?.defaultProvider}
+          defaultModel={
+            settings?.defaultModel ||
+            session.model ||
+            "claude-sonnet-4-20250514"
+          }
+          sessionId={session?.id ?? undefined}
+        />
+        <CapabilitiesPanel
+          isOpen={capabilitiesOpen}
+          onClose={() => setCapabilitiesOpen(false)}
+        />
       </>
     </div>
   );

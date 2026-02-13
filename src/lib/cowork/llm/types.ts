@@ -7,7 +7,10 @@
 /** Standard JSON Schema object for tool input (provider-agnostic). */
 export interface CanonicalToolInputSchema {
   type: "object";
-  properties?: Record<string, { type?: string; description?: string; [k: string]: unknown }>;
+  properties?: Record<
+    string,
+    { type?: string; description?: string; [k: string]: unknown }
+  >;
   required?: string[];
   additionalProperties?: boolean;
   [k: string]: unknown;
@@ -25,7 +28,11 @@ export interface CanonicalToolDefinition {
   };
 }
 
-export type CanonicalStopReason = "end_turn" | "tool_use" | "max_tokens" | "error";
+export type CanonicalStopReason =
+  | "end_turn"
+  | "tool_use"
+  | "max_tokens"
+  | "error";
 
 export interface CanonicalTextBlock {
   type: "text";

@@ -57,22 +57,40 @@ export type CoworkAction =
   | { type: "SET_OUTPUTS"; payload: CoworkFileRecord[] }
   | { type: "ADD_FILE"; payload: CoworkFileRecord }
   | { type: "SET_ACTIVE_ARTIFACT"; payload: CoworkFileRecord | null }
-  | { type: "SET_UPLOAD_PROGRESS"; payload: { fileId: string; progress: number } }
+  | {
+      type: "SET_UPLOAD_PROGRESS";
+      payload: { fileId: string; progress: number };
+    }
   | { type: "CLEAR_UPLOAD_PROGRESS"; payload: string }
   // Sub-agent actions
   | { type: "SET_SUB_AGENTS"; payload: SubAgent[] }
   | { type: "UPDATE_SUB_AGENT"; payload: SubAgent }
   // Settings actions
-  | { type: "SET_SETTINGS"; payload: import("@/types/cowork").CoworkSettings | null }
+  | {
+      type: "SET_SETTINGS";
+      payload: import("@/types/cowork").CoworkSettings | null;
+    }
   // UI actions
   | { type: "TOGGLE_SIDEBAR" }
   | { type: "SET_SIDEBAR_OPEN"; payload: boolean }
   | { type: "TOGGLE_RIGHT_PANEL" }
   | { type: "SET_RIGHT_PANEL_OPEN"; payload: boolean }
-  | { type: "SET_RIGHT_PANEL_TAB"; payload: "artifacts" | "files" | "tasks" | "tools" }
+  | {
+      type: "SET_RIGHT_PANEL_TAB";
+      payload: "artifacts" | "files" | "tasks" | "tools";
+    }
   | { type: "SET_COMMAND_PALETTE_OPEN"; payload: boolean }
   | { type: "SET_SETTINGS_OPEN"; payload: boolean }
-  | { type: "SET_STARTER_MESSAGE"; payload: string | null };
+  | { type: "SET_STARTER_MESSAGE"; payload: string | null }
+  // Message feedback
+  | {
+      type: "SET_MESSAGE_FEEDBACK";
+      payload: { messageId: string; rating: "positive" | "negative" };
+    }
+  | {
+      type: "SET_MESSAGE_FEEDBACK_MAP";
+      payload: Record<string, "positive" | "negative">;
+    };
 
 // ============================================================================
 // Initial State
@@ -92,6 +110,7 @@ const initialState: CoworkAppState = {
     pendingQuestion: null,
     pendingPlan: null,
     starterMessage: null,
+    messageFeedback: {},
   },
   todos: {
     items: [],
@@ -322,13 +341,13 @@ function coworkReducer(
       };
     case "UPDATE_SUB_AGENT": {
       const existingIndex = state.subAgents.active.findIndex(
-        (a) => a.id === action.payload.id
+        (a) => a.id === action.payload.id,
       );
       let agents;
       if (existingIndex >= 0) {
         // Update existing agent
         agents = state.subAgents.active.map((a) =>
-          a.id === action.payload.id ? action.payload : a
+          a.id === action.payload.id ? action.payload : a,
         );
       } else {
         // Add new agent
@@ -383,6 +402,23 @@ function coworkReducer(
       return {
         ...state,
         chat: { ...state.chat, starterMessage: action.payload },
+      };
+
+    case "SET_MESSAGE_FEEDBACK":
+      return {
+        ...state,
+        chat: {
+          ...state.chat,
+          messageFeedback: {
+            ...state.chat.messageFeedback,
+            [action.payload.messageId]: action.payload.rating,
+          },
+        },
+      };
+    case "SET_MESSAGE_FEEDBACK_MAP":
+      return {
+        ...state,
+        chat: { ...state.chat, messageFeedback: action.payload },
       };
 
     default:
@@ -508,8 +544,7 @@ export function useCoworkActions() {
       [dispatch],
     ),
     addFile: useCallback(
-      (file: CoworkFileRecord) =>
-        dispatch({ type: "ADD_FILE", payload: file }),
+      (file: CoworkFileRecord) => dispatch({ type: "ADD_FILE", payload: file }),
       [dispatch],
     ),
     setActiveArtifact: useCallback(
@@ -563,6 +598,11 @@ export function useCoworkActions() {
     setStarterMessage: useCallback(
       (message: string | null) =>
         dispatch({ type: "SET_STARTER_MESSAGE", payload: message }),
+      [dispatch],
+    ),
+    setMessageFeedbackMap: useCallback(
+      (map: Record<string, "positive" | "negative">) =>
+        dispatch({ type: "SET_MESSAGE_FEEDBACK_MAP", payload: map }),
       [dispatch],
     ),
   };

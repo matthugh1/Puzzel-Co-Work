@@ -34,7 +34,7 @@ export default function OrganizationsPage() {
         // Check if user has organizations:create permission or is global admin
         setCanCreate(
           user.permissions.includes("organizations:create") ||
-          user.roles.includes("admin"),
+            user.roles.includes("admin"),
         );
       }
     } catch (err) {
